@@ -1,5 +1,5 @@
 import { RawData, WebSocket } from "ws";
-
+import { addUser} from "../services/user.service.js";
 export const handleMessage = (
   socket: WebSocket,
   data: RawData
@@ -15,6 +15,7 @@ export const handleMessage = (
 
     switch (payload.type) {
       case "join":
+        addUser(socket, payload.username);
         console.log(`${payload.username} a rejoint le chat`);
         break;
 
