@@ -1,0 +1,32 @@
+{
+  "name": "chatsphere",
+  "version": "1.0.0",
+  "description": "A real-time chat server built with Node.js, TypeScript, and WebSocket.",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "tsx watch server/src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "check": "tsc --noEmit"
+  },
+  "keywords": [
+    "websocket",
+    "ws",
+    "nodejs",
+    "typescript",
+    "chat",
+    "realtime"
+  ],
+  "author": "Abdellah Berrezoug",
+  "license": "MIT",
+  "dependencies": {
+    "ws": "^8.18.3"
+  },
+  "devDependencies": {
+    "@types/node": "^24.3.1",
+    "@types/ws": "^8.18.1",
+    "tsx": "^4.23.0",
+    "typescript": "^5.9.2"
+  }
+}
