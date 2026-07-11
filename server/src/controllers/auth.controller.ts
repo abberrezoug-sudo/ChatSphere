@@ -91,3 +91,41 @@ export const refreshToken = async (
     });
   }
 };
+
+export const getMe = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
+
+    const user = await authService.getCurrentUser(
+      req.user.id
+    );
+
+    res.status(200).json({
+      success: true,
+      user,
+    });
+  } catch (error: unknown) {
+    res.status(404).json({
+      success: false,
+      message: getErrorMessage(error),
+    });
+  }
+};
+
+export const logout = (
+  _req: Request,
+  res: Response
+) => {
+  res.status(200).json({
+    success: true,
+    message: "Logout successful",
+  });
+};

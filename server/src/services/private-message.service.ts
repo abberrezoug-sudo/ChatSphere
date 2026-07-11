@@ -1,16 +1,19 @@
-import { WebSocket } from "ws";
 import { getSocketByUsername } from "./user.service.js";
-export const sendPrivateMessage =( to: string, message: string): void => {
-      const receiver = getSocketByUsername(to);
+import { sendJson } from "../utils/sendJson.js";
+
+export const sendPrivateMessage = (
+  to: string,
+  payload: unknown
+): boolean => {
+  const receiver = getSocketByUsername(to);
 
   if (!receiver) {
-    console.log(`❌ ${to} est hors ligne`);
-    return;
+    console.log(`${to} is offline`);
+    return false;
   }
 
-  if (receiver.readyState === WebSocket.OPEN) {
-    receiver.send(message);
+  sendJson(receiver, payload);
 
-    console.log(`📨 Message privé envoyé à ${to}`);
-  }
-}
+  console.log(`Private message sent to ${to}`);
+  return true;
+};

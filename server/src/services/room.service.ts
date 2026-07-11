@@ -1,40 +1,50 @@
 import { WebSocket } from "ws";
+import { AuthSocket } from "../types/socket.js";
+import { sendJson } from "../utils/sendJson.js";
 
-// roomName -> Set<WebSocket>
 const rooms = new Map<string, Set<WebSocket>>();
 
 export const joinRoom = (
   roomName: string,
-  socket: WebSocket
+  socket: AuthSocket
 ): void => {
-
   if (!rooms.has(roomName)) {
     rooms.set(roomName, new Set());
   }
 
-  const room = rooms.get(roomName)!;
+  rooms.get(roomName)!.add(socket);
+  socket.rooms.add(roomName);
 
-  room.add(socket);
-
-  console.log(`✅ Un utilisateur a rejoint ${roomName}`);
+  console.log(`${socket.username} joined room ${roomName}`);
 };
 
 export const leaveRoom = (
-  socket: WebSocket,
+  socket: AuthSocket,
   roomName: string
 ): void => {
-
   const room = rooms.get(roomName);
 
-  if (!room) return;
+  if (!room) {
+    socket.rooms.delete(roomName);
+    return;
+  }
 
   room.delete(socket);
+  socket.rooms.delete(roomName);
 
-  console.log(`❌ Un utilisateur a quitté ${roomName}`);
+  console.log(`${socket.username} left room ${roomName}`);
 
   if (room.size === 0) {
     rooms.delete(roomName);
-    console.log(`🗑️ Salon ${roomName} supprimé`);
+    console.log(`Room ${roomName} deleted`);
+  }
+};
+
+export const leaveAllRooms = (
+  socket: AuthSocket
+): void => {
+  for (const roomName of Array.from(socket.rooms)) {
+    leaveRoom(socket, roomName);
   }
 };
 
@@ -50,21 +60,18 @@ export const getRooms = (): Map<string, Set<WebSocket>> => {
 
 export const broadcastToRoom = (
   roomName: string,
-  message: string
+  payload: unknown
 ): void => {
-
   const room = rooms.get(roomName);
 
   if (!room) {
-    console.log(`❌ Le salon ${roomName} n'existe pas`);
+    console.log(`Room ${roomName} does not exist`);
     return;
   }
 
   room.forEach((client) => {
-    if (client.readyState === WebSocket.OPEN) {
-      client.send(message);
-    }
+    sendJson(client, payload);
   });
 
-  console.log(`📤 Message envoyé au salon ${roomName}`);
+  console.log(`Message sent to room ${roomName}`);
 };

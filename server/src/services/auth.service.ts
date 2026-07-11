@@ -1,12 +1,11 @@
 import bcrypt from "bcrypt";
-import { User } from "../models/User.js";
+import { IUser, User } from "../models/User.js";
 
 import {
   generateAccessToken,
   generateRefreshToken,
   verifyRefreshToken,
 } from "../utils/jwt.js";
-import { IUser } from "../models/User.js";
 
 interface RegisterPayload {
   username: string;
@@ -141,5 +140,17 @@ export class AuthService {
       user: toAuthUser(user),
       accessToken: generateAccessToken(user.id),
     };
+  }
+
+  async getCurrentUser(
+    userId: string
+  ) {
+    const user = await User.findById(userId);
+
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    return toAuthUser(user);
   }
 }
