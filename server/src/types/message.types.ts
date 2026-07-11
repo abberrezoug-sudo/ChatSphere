@@ -17,8 +17,14 @@ export interface JoinRoomMessage {
   type: "joinRoom";
   room: string;
 }
+export interface PrivateMessage {
+    type: "private";
+    to: string;
+    message: string;
+}
 export type ClientMessage =
   | JoinMessage
   | ChatMessage
   | LeaveMessage
-  | JoinRoomMessage;
+  | JoinRoomMessage
+  | PrivateMessage;
