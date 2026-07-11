@@ -1,12 +1,16 @@
+import { Server } from "http";
 import { WebSocketServer } from "ws";
 import { handleConnection } from "../handlers/connection.handler.js";
 
-export const startWebSocketServer = () => {
+export const startWebSocketServer = (
+  server: Server
+) => {
+
   const wss = new WebSocketServer({
-    port: 8080,
+    server
   });
 
-  console.log("🚀 WebSocket Server running on ws://localhost:8080");
+  console.log("✅ WebSocket initialisé");
 
   wss.on("connection", handleConnection);
 };

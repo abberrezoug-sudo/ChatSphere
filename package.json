@@ -21,12 +21,24 @@
   "author": "Abdellah Berrezoug",
   "license": "MIT",
   "dependencies": {
-    "ws": "^8.18.3"
+    "bcrypt": "^6.0.0",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^9.7.4",
+    "ws": "^8.21.0"
   },
   "devDependencies": {
-    "@types/node": "^24.3.1",
+    "@types/bcrypt": "^6.0.0",
+    "@types/cookie-parser": "^1.4.10",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^24.13.3",
     "@types/ws": "^8.18.1",
     "tsx": "^4.23.0",
-    "typescript": "^5.9.2"
+    "typescript": "^5.9.3"
   }
 }
