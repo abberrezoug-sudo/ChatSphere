@@ -1,124 +1,59 @@
 import { RawData } from "ws";
-import { z } from "zod";
 import { AuthSocket } from "../types/socket.js";
-import {
-  broadcastToRoom,
-  joinRoom,
-  leaveRoom,
-} from "../services/room.service.js";
-import { sendPrivateMessage } from "../services/private-message.service.js";
-import { sendJson } from "../utils/sendJson.js";
 
-const messageSchema = z.discriminatedUnion("type", [
-  z.object({
-    type: z.literal("join"),
-  }),
-  z.object({
-    type: z.literal("joinRoom"),
-    room: z.string().trim().min(1),
-  }),
-  z.object({
-    type: z.literal("leaveRoom"),
-    room: z.string().trim().min(1),
-  }),
-  z.object({
-    type: z.literal("message"),
-    room: z.string().trim().min(1),
-    message: z.string().trim().min(1),
-  }),
-  z.object({
-    type: z.literal("private"),
-    to: z.string().trim().min(1),
-    message: z.string().trim().min(1),
-  }),
-]);
-
+import { addUser } from "../services/user.service.js";
+import { joinRoom, broadcastToRoom } from "../services/room.service.js";
 export const handleMessage = (
   socket: AuthSocket,
   data: RawData
 ): void => {
+  const message = data.toString();
+
+  console.log("📩 Message reçu :", message);
+
   try {
-    const payload = messageSchema.parse(
-      JSON.parse(data.toString())
-    );
+    const payload = JSON.parse(message);
+
+    console.log("📦 Payload :", payload);
 
     switch (payload.type) {
       case "join":
-        sendJson(socket, {
-          type: "joined",
-          username: socket.username,
-          userId: socket.userId,
-        });
+        addUser(socket, payload.username);
+
+        console.log(`👤 ${payload.username} a rejoint le chat`);
         break;
 
       case "joinRoom":
         joinRoom(payload.room, socket);
 
-        sendJson(socket, {
-          type: "roomJoined",
-          room: payload.room,
-        });
-        break;
-
-      case "leaveRoom":
-        leaveRoom(socket, payload.room);
-
-        sendJson(socket, {
-          type: "roomLeft",
-          room: payload.room,
-        });
+        console.log(
+          `📁 ${payload.username} a rejoint le salon ${payload.room}`
+        );
         break;
 
       case "message": {
-        if (!socket.rooms.has(payload.room)) {
-          sendJson(socket, {
-            type: "error",
-            message: `Join room ${payload.room} before sending messages`,
-          });
-          break;
-        }
+        console.log(`${payload.username} : ${payload.message}`);
 
         const response = {
           type: "message",
-          username: socket.username,
-          userId: socket.userId,
+          username: payload.username,
           room: payload.room,
           message: payload.message,
           timestamp: new Date().toISOString(),
         };
 
-        broadcastToRoom(payload.room, response);
-        break;
-      }
-
-      case "private": {
-        const response = {
-          type: "private",
-          username: socket.username,
-          userId: socket.userId,
-          message: payload.message,
-          timestamp: new Date().toISOString(),
-        };
-
-        const sent = sendPrivateMessage(
-          payload.to,
-          response
+        broadcastToRoom(
+          payload.room,
+          JSON.stringify(response)
         );
 
-        if (!sent) {
-          sendJson(socket, {
-            type: "error",
-            message: `${payload.to} is offline`,
-          });
-        }
-
         break;
       }
+
+      default:
+        console.log("❓ Type inconnu :", payload.type);
     }
-  } catch {
-    sendJson(socket, {
-      type: "error",
-      message: "Invalid message payload",
-    });
+  } catch (error) {
+    console.error("❌ JSON invalide");
   }
 };
