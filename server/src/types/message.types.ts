@@ -13,8 +13,12 @@ export interface LeaveMessage {
   type: "leave";
   username: string;
 }
-
+export interface JoinRoomMessage {
+  type: "joinRoom";
+  room: string;
+}
 export type ClientMessage =
   | JoinMessage
   | ChatMessage
-  | LeaveMessage;
+  | LeaveMessage
+  | JoinRoomMessage;
