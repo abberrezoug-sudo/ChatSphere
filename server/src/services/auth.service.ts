@@ -4,7 +4,9 @@ import { User } from "../models/User.js";
 import {
   generateAccessToken,
   generateRefreshToken,
+  verifyRefreshToken,
 } from "../utils/jwt.js";
+import { IUser } from "../models/User.js";
 
 interface RegisterPayload {
   username: string;
@@ -17,6 +19,13 @@ interface LoginPayload {
   password: string;
 }
 
+const toAuthUser = (user: IUser) => ({
+  id: user.id,
+  username: user.username,
+  email: user.email,
+  avatar: user.avatar,
+});
+
 export class AuthService {
 
   async register(
@@ -24,12 +33,17 @@ export class AuthService {
   ) {
 
     const exists = await User.findOne({
-      email: payload.email,
+      $or: [
+        { email: payload.email },
+        { username: payload.username },
+      ],
     });
 
     if (exists) {
       throw new Error(
-        "Email already exists"
+        exists.email === payload.email
+          ? "Email already exists"
+          : "Username already exists"
       );
     }
 
@@ -46,7 +60,21 @@ export class AuthService {
         password: hashedPassword,
       });
 
-    return user;
+    const accessToken =
+      generateAccessToken(
+        user.id
+      );
+
+    const refreshToken =
+      generateRefreshToken(
+        user.id
+      );
+
+    return {
+      user: toAuthUser(user),
+      accessToken,
+      refreshToken,
+    };
   }
 
   async login(
@@ -87,9 +115,31 @@ export class AuthService {
       );
 
     return {
-      user,
+      user: toAuthUser(user),
       accessToken,
       refreshToken,
+    };
+  }
+
+  async refreshAccessToken(
+    refreshToken: string
+  ) {
+    const payload =
+      verifyRefreshToken(refreshToken);
+
+    const user = await User.findById(
+      payload.userId
+    );
+
+    if (!user) {
+      throw new Error(
+        "Invalid refresh token"
+      );
+    }
+
+    return {
+      user: toAuthUser(user),
+      accessToken: generateAccessToken(user.id),
     };
   }
 }

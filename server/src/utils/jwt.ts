@@ -1,14 +1,16 @@
-import jwt from "jsonwebtoken";
+import jwt, { JwtPayload } from "jsonwebtoken";
+import { env } from "../config/env.js";
 
-const JWT_SECRET = process.env.JWT_SECRET as string;
-const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET as string;
+export interface AuthTokenPayload extends JwtPayload {
+  userId: string;
+}
 
 export const generateAccessToken = (
   userId: string
 ): string => {
   return jwt.sign(
     { userId },
-    JWT_SECRET,
+    env.jwtSecret,
     {
       expiresIn: "15m",
     }
@@ -20,7 +22,7 @@ export const generateRefreshToken = (
 ): string => {
   return jwt.sign(
     { userId },
-    JWT_REFRESH_SECRET,
+    env.jwtRefreshSecret,
     {
       expiresIn: "7d",
     }
@@ -29,18 +31,36 @@ export const generateRefreshToken = (
 
 export const verifyAccessToken = (
   token: string
-) => {
-  return jwt.verify(
+) : AuthTokenPayload => {
+  const payload = jwt.verify(
     token,
-    JWT_SECRET
+    env.jwtSecret
   );
+
+  if (
+    typeof payload === "string" ||
+    typeof payload.userId !== "string"
+  ) {
+    throw new Error("Invalid token payload");
+  }
+
+  return payload as AuthTokenPayload;
 };
 
 export const verifyRefreshToken = (
   token: string
-) => {
-  return jwt.verify(
+) : AuthTokenPayload => {
+  const payload = jwt.verify(
     token,
-    JWT_REFRESH_SECRET
+    env.jwtRefreshSecret
   );
+
+  if (
+    typeof payload === "string" ||
+    typeof payload.userId !== "string"
+  ) {
+    throw new Error("Invalid token payload");
+  }
+
+  return payload as AuthTokenPayload;
 };
