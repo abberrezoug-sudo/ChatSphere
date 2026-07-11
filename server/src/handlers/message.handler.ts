@@ -1,7 +1,7 @@
 import { RawData, WebSocket } from "ws";
 import { addUser } from "../services/user.service.js";
 import { joinRoom, broadcastToRoom } from "../services/room.service.js";
-
+import { sendPrivateMessage } from "../services/private-message.service.js";
 export const handleMessage = (
   socket: WebSocket,
   data: RawData
@@ -48,7 +48,25 @@ export const handleMessage = (
 
         break;
       }
+case "private": {
+  console.log(
+    `📩 Message privé de ${payload.username} vers ${payload.to}`
+  );
 
+  const response = {
+    type: "private",
+    username: payload.username,
+    message: payload.message,
+    timestamp: new Date().toISOString(),
+  };
+
+  sendPrivateMessage(
+    payload.to,
+    JSON.stringify(response)
+  );
+
+  break;
+}
       default:
         console.log("❓ Type inconnu :", payload.type);
     }
