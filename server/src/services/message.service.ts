@@ -32,7 +32,7 @@ export class MessageService {
       throw new Error("Invalid room");
     }
 
-    return await messageRepository.findByRoom(roomId);
+     return await messageRepository.findByRoom(roomId, 50);
   }
 
   async editMessage(messageId: string, content: string) {
@@ -42,4 +42,5 @@ export class MessageService {
   async deleteMessage(messageId: string) {
     return await messageRepository.deleteMessage(messageId);
   }
+
 }

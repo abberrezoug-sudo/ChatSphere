@@ -56,10 +56,25 @@ export const handleMessage = async (
 
   break;
 }
+case "history": {
+  const messages = await messageService.getRoomMessages(
+    payload.room
+  );
 
+  socket.send(
+    JSON.stringify({
+      type: "history",
+      room: payload.room,
+      messages,
+    })
+  );
+
+  break;
+}
       default:
         console.log("❓ Type inconnu :", payload.type);
     }
+    
   } catch (error) {
   console.error("Erreur :", error);
 }
