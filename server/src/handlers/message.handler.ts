@@ -3,10 +3,14 @@ import { AuthSocket } from "../types/socket.js";
 
 import { addUser } from "../services/user.service.js";
 import { joinRoom, broadcastToRoom } from "../services/room.service.js";
-export const handleMessage = (
+import { MessageService } from "../services/message.service.js";
+import { promises } from "node:dns";
+
+const messageService = new MessageService();
+export const handleMessage = async (
   socket: AuthSocket,
   data: RawData
-): void => {
+): Promise<void> => { 
   const message = data.toString();
 
   console.log("📩 Message reçu :", message);
@@ -32,23 +36,26 @@ export const handleMessage = (
         break;
 
       case "message": {
-        console.log(`${payload.username} : ${payload.message}`);
+  console.log(`${socket.username} : ${payload.message}`);
 
-        const response = {
-          type: "message",
-          username: payload.username,
-          room: payload.room,
-          message: payload.message,
-          timestamp: new Date().toISOString(),
-        };
+  const savedMessage = await messageService.sendMessage(
+    socket.userId!,
+    payload.room,
+    payload.message
+  );
 
-        broadcastToRoom(
-          payload.room,
-          JSON.stringify(response)
-        );
+  const response = {
+    type: "message",
+    message: savedMessage,
+  };
 
-        break;
-      }
+  broadcastToRoom(
+    payload.room,
+    JSON.stringify(response)
+  );
+
+  break;
+}
 
       default:
         console.log("❓ Type inconnu :", payload.type);
