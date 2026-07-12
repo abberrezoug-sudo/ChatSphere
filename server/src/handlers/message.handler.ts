@@ -30,9 +30,9 @@ export const handleMessage = async (
       case "joinRoom":
         joinRoom(payload.room, socket);
 
-        console.log(
-          `📁 ${payload.username} a rejoint le salon ${payload.room}`
-        );
+       console.log(
+  `📁 ${socket.username} a rejoint le salon ${payload.room}`
+);
         break;
 
       case "message": {
@@ -61,6 +61,6 @@ export const handleMessage = async (
         console.log("❓ Type inconnu :", payload.type);
     }
   } catch (error) {
-    console.error("❌ JSON invalide");
-  }
+  console.error("Erreur :", error);
+}
 };
