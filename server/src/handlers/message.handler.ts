@@ -27,13 +27,27 @@ export const handleMessage = async (
         console.log(`👤 ${payload.username} a rejoint le chat`);
         break;
 
-      case "joinRoom":
-        joinRoom(payload.room, socket);
+     case "joinRoom": {
+  joinRoom(payload.room, socket);
 
-       console.log(
-  `📁 ${socket.username} a rejoint le salon ${payload.room}`
-);
-        break;
+  console.log(
+    `📁 ${socket.username} a rejoint le salon ${payload.room}`
+  );
+
+  const messages = await messageService.getRoomMessages(
+    payload.room
+  );
+
+  socket.send(
+    JSON.stringify({
+      type: "history",
+      room: payload.room,
+      messages,
+    })
+  );
+
+  break;
+}
 
       case "message": {
   console.log(`${socket.username} : ${payload.message}`);
