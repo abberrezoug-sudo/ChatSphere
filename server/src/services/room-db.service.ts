@@ -24,4 +24,22 @@ export class RoomService {
   async getRooms() {
     return await roomRepository.findAll();
   }
+  async joinRoom(roomId: string, userId: string) {
+  const room = await roomRepository.addMember(roomId, userId);
+
+  if (!room) {
+    throw new Error("Room not found");
+  }
+
+  return room;
+}
+async leaveRoom(roomId: string, userId: string) {
+  const room = await roomRepository.removeMember(roomId, userId);
+
+  if (!room) {
+    throw new Error("Room not found");
+  }
+
+  return room;
+}
 }

@@ -27,4 +27,30 @@ export class RoomRepository {
   async findById(id: string): Promise<IRoom | null> {
     return await Room.findById(id);
   }
+  async addMember(roomId: string, userId: string): Promise<IRoom | null> {
+  return await Room.findByIdAndUpdate(
+    roomId,
+    {
+      $addToSet: {
+        members: userId,
+      },
+    },
+    {
+      new: true,
+    }
+  );
+}
+async removeMember(roomId: string, userId: string): Promise<IRoom | null> {
+  return await Room.findByIdAndUpdate(
+    roomId,
+    {
+      $pull: {
+        members: userId,
+      },
+    },
+    {
+      new: true,
+    }
+  );
+}
 }

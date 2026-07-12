@@ -2,7 +2,7 @@ import { RawData } from "ws";
 import { AuthSocket } from "../types/socket.js";
 
 import { addUser } from "../services/user.service.js";
-import { joinRoom, broadcastToRoom } from "../services/room.service.js";
+import { joinRoom, broadcastToRoom, leaveRoom } from "../services/room.service.js";
 import { MessageService } from "../services/message.service.js";
 import { RoomService } from "../services/room-db.service.js";
 
@@ -59,26 +59,34 @@ export const handleMessage = async (
       }
 
       case "joinRoom": {
-        joinRoom(payload.room, socket);
+  // Ajouter le membre dans MongoDB
+  await roomService.joinRoom(
+    payload.room,
+    socket.userId!
+  );
 
-        console.log(
-          `📁 ${socket.username} a rejoint le salon ${payload.room}`
-        );
+  // Ajouter le socket dans la room WebSocket
+  joinRoom(payload.room, socket);
 
-        const messages = await messageService.getRoomMessages(
-          payload.room
-        );
+  console.log(
+    `📁 ${socket.username} a rejoint le salon ${payload.room}`
+  );
 
-        socket.send(
-          JSON.stringify({
-            type: "history",
-            room: payload.room,
-            messages,
-          })
-        );
+  // Envoyer l'historique
+  const messages = await messageService.getRoomMessages(
+    payload.room
+  );
 
-        break;
-      }
+  socket.send(
+    JSON.stringify({
+      type: "history",
+      room: payload.room,
+      messages,
+    })
+  );
+
+  break;
+}
 
       case "message": {
         console.log(`${socket.username} : ${payload.message}`);
@@ -112,7 +120,27 @@ export const handleMessage = async (
 
         break;
       }
+case "leaveRoom": {
+  await roomService.leaveRoom(
+    payload.room,
+    socket.userId!
+  );
 
+  leaveRoom(socket, payload.room);
+
+  socket.send(
+    JSON.stringify({
+      type: "roomLeft",
+      room: payload.room,
+    })
+  );
+
+  console.log(
+    `${socket.username} a quitté ${payload.room}`
+  );
+
+  break;
+}
       default:
         console.log("❓ Type inconnu :", payload.type);
     }
