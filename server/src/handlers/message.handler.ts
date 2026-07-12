@@ -4,92 +4,119 @@ import { AuthSocket } from "../types/socket.js";
 import { addUser } from "../services/user.service.js";
 import { joinRoom, broadcastToRoom } from "../services/room.service.js";
 import { MessageService } from "../services/message.service.js";
-import { promises } from "node:dns";
+import { RoomService } from "../services/room-db.service.js";
 
 const messageService = new MessageService();
+const roomService = new RoomService();
+
 export const handleMessage = async (
   socket: AuthSocket,
   data: RawData
-): Promise<void> => { 
-  const message = data.toString();
-
-  console.log("📩 Message reçu :", message);
-
+): Promise<void> => {
   try {
-    const payload = JSON.parse(message);
+    const payload = JSON.parse(data.toString());
 
     console.log("📦 Payload :", payload);
 
     switch (payload.type) {
-      case "join":
+      case "join": {
         addUser(socket, payload.username);
 
         console.log(`👤 ${payload.username} a rejoint le chat`);
         break;
+      }
 
-     case "joinRoom": {
-  joinRoom(payload.room, socket);
+      case "createRoom": {
+        const room = await roomService.createRoom(
+          socket.userId!,
+          payload.name,
+          payload.description ?? ""
+        );
 
-  console.log(
-    `📁 ${socket.username} a rejoint le salon ${payload.room}`
-  );
+        socket.send(
+          JSON.stringify({
+            type: "roomCreated",
+            room,
+          })
+        );
 
-  const messages = await messageService.getRoomMessages(
-    payload.room
-  );
+        console.log(`✅ Room créée : ${room.name}`);
 
-  socket.send(
-    JSON.stringify({
-      type: "history",
-      room: payload.room,
-      messages,
-    })
-  );
+        break;
+      }
 
-  break;
-}
+      case "rooms": {
+        const rooms = await roomService.getRooms();
+
+        socket.send(
+          JSON.stringify({
+            type: "rooms",
+            rooms,
+          })
+        );
+
+        break;
+      }
+
+      case "joinRoom": {
+        joinRoom(payload.room, socket);
+
+        console.log(
+          `📁 ${socket.username} a rejoint le salon ${payload.room}`
+        );
+
+        const messages = await messageService.getRoomMessages(
+          payload.room
+        );
+
+        socket.send(
+          JSON.stringify({
+            type: "history",
+            room: payload.room,
+            messages,
+          })
+        );
+
+        break;
+      }
 
       case "message": {
-  console.log(`${socket.username} : ${payload.message}`);
+        console.log(`${socket.username} : ${payload.message}`);
 
-  const savedMessage = await messageService.sendMessage(
-    socket.userId!,
-    payload.room,
-    payload.message
-  );
+        const savedMessage = await messageService.sendMessage(
+          socket.userId!,
+          payload.room,
+          payload.message
+        );
 
-  const response = {
-    type: "message",
-    message: savedMessage,
-  };
+        broadcastToRoom(payload.room, {
+          type: "message",
+          message: savedMessage,
+        });
 
-  broadcastToRoom(
-    payload.room,
-    JSON.stringify(response)
-  );
+        break;
+      }
 
-  break;
-}
-case "history": {
-  const messages = await messageService.getRoomMessages(
-    payload.room
-  );
+      case "history": {
+        const messages = await messageService.getRoomMessages(
+          payload.room
+        );
 
-  socket.send(
-    JSON.stringify({
-      type: "history",
-      room: payload.room,
-      messages,
-    })
-  );
+        socket.send(
+          JSON.stringify({
+            type: "history",
+            room: payload.room,
+            messages,
+          })
+        );
 
-  break;
-}
+        break;
+      }
+
       default:
         console.log("❓ Type inconnu :", payload.type);
     }
-    
   } catch (error) {
-  console.error("Erreur :", error);
-}
+    console.error("❌ WebSocket Error:", error);
+  }
 };
