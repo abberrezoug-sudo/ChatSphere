@@ -219,7 +219,31 @@ case "deleteMessage": {
 
   break;
 }
+case "typing": {
+  broadcastToRoom(payload.roomId, {
+    type: "typing",
+    roomId: payload.roomId,
+    user: {
+      _id: socket.userId,
+      username: socket.username,
+    },
+  });
 
+  break;
+}
+
+case "stopTyping": {
+  broadcastToRoom(payload.roomId, {
+    type: "stopTyping",
+    roomId: payload.roomId,
+    user: {
+      _id: socket.userId,
+      username: socket.username,
+    },
+  });
+
+  break;
+}
 
       default:
         console.log("❓ Type inconnu :", payload.type);

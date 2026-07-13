@@ -59,19 +59,17 @@ export const getRooms = (): Map<string, Set<WebSocket>> => {
 };
 
 export const broadcastToRoom = (
-  roomName: string,
-  payload: unknown
-): void => {
-  const room = rooms.get(roomName);
+  roomId: string,
+  payload: any,
+  excludeSocket?: AuthSocket
+) => {
+  const room = rooms.get(roomId);
 
-  if (!room) {
-    console.log(`Room ${roomName} does not exist`);
-    return;
-  }
+  if (!room) return;
 
   room.forEach((client) => {
-    sendJson(client, payload);
+    if (client !== excludeSocket) {
+      client.send(JSON.stringify(payload));
+    }
   });
-
-  console.log(`Message sent to room ${roomName}`);
 };
