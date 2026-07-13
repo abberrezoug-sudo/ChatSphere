@@ -27,7 +27,14 @@ export class RoomRepository {
   async findById(id: string): Promise<IRoom | null> {
     return await Room.findById(id);
   }
-  async addMember(roomId: string, userId: string): Promise<IRoom | null> {
+ async addMember(roomId: string, userId: string): Promise<IRoom | null> {
+
+  console.log("ROOM ID reçu :", roomId);
+
+  const room = await Room.findById(roomId);
+
+  console.log("ROOM TROUVEE :", room);
+
   return await Room.findByIdAndUpdate(
     roomId,
     {

@@ -8,7 +8,7 @@ import {
 interface CreateMessagePayload {
   sender: Types.ObjectId;
   receiver?: Types.ObjectId;
-  room?: string;
+  room?: string | Types.ObjectId;
   content: string;
   type?: MessageType;
 }
@@ -18,7 +18,7 @@ export class MessageRepository {
     return await Message.create({
       sender: data.sender,
       receiver: data.receiver,
-      room: data.room,
+      room: data.room?.toString(),
       content: data.content,
       type: data.type ?? MessageType.TEXT,
     });
@@ -28,6 +28,10 @@ export class MessageRepository {
     return await Message.findById(id)
       .populate("sender", "username avatar")
       .populate("receiver", "username avatar");
+  }
+
+  async findByIdRaw(id: string): Promise<IMessage | null> {
+    return await Message.findById(id);
   }
 
   async findByRoom(roomId: string, limit = 50): Promise<IMessage[]> {

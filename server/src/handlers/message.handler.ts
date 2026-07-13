@@ -5,6 +5,7 @@ import { addUser } from "../services/user.service.js";
 import { joinRoom, broadcastToRoom, leaveRoom } from "../services/room.service.js";
 import { MessageService } from "../services/message.service.js";
 import { RoomService } from "../services/room-db.service.js";
+import { editMessageSchema } from "../validators/message.validator.js";
 
 const messageService = new MessageService();
 const roomService = new RoomService();
@@ -61,12 +62,12 @@ export const handleMessage = async (
       case "joinRoom": {
   // Ajouter le membre dans MongoDB
   await roomService.joinRoom(
-    payload.room,
+    payload.roomId,
     socket.userId!
   );
 
   // Ajouter le socket dans la room WebSocket
-  joinRoom(payload.room, socket);
+  joinRoom(payload.roomId, socket);
 
   console.log(
     `📁 ${socket.username} a rejoint le salon ${payload.room}`
@@ -74,13 +75,13 @@ export const handleMessage = async (
 
   // Envoyer l'historique
   const messages = await messageService.getRoomMessages(
-    payload.room
+    payload.roomId
   );
 
   socket.send(
     JSON.stringify({
       type: "history",
-      room: payload.room,
+      room: payload.roomId,
       messages,
     })
   );
@@ -117,6 +118,50 @@ export const handleMessage = async (
             messages,
           })
         );
+
+        break;
+      }
+      case "editMessage": {
+        const result = editMessageSchema.safeParse(payload);
+
+        if (!result.success) {
+          socket.send(
+            JSON.stringify({
+              type: "error",
+              message: "Invalid edit message payload",
+            })
+          );
+
+          break;
+        }
+
+        try {
+          const editedMessage = await messageService.editMessageForUser(
+            result.data.messageId,
+            socket.userId!,
+            result.data.content
+          );
+
+          if (!editedMessage?.room) {
+            throw new Error("Message room not found");
+          }
+
+          broadcastToRoom(
+            editedMessage.room.toString(), {
+            type: "messageEdited",
+            message: editedMessage,
+          });
+        } catch (error) {
+          socket.send(
+            JSON.stringify({
+              type: "error",
+              message:
+                error instanceof Error
+                  ? error.message
+                  : "Unable to edit message",
+            })
+          );
+        }
 
         break;
       }

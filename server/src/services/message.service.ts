@@ -39,6 +39,36 @@ export class MessageService {
     return await messageRepository.editMessage(messageId, content);
   }
 
+  async editMessageForUser(
+    messageId: string,
+    sender: string,
+    content: string
+  ) {
+    if (!Types.ObjectId.isValid(messageId)) {
+      throw new Error("Invalid message");
+    }
+
+    if (!Types.ObjectId.isValid(sender)) {
+      throw new Error("Invalid sender");
+    }
+
+    const message = await messageRepository.findByIdRaw(messageId);
+
+    if (!message) {
+      throw new Error("Message not found");
+    }
+
+    if (message.deleted) {
+      throw new Error("Message is deleted");
+    }
+
+    if (message.sender.toString() !== sender) {
+      throw new Error("You can only edit your own messages");
+    }
+
+    return await messageRepository.editMessage(messageId, content);
+  }
+
   async deleteMessage(messageId: string) {
     return await messageRepository.deleteMessage(messageId);
   }

@@ -22,7 +22,7 @@ export const roomHistorySchema = z.object({
 });
 
 export const editMessageSchema = z.object({
-  type: z.literal("edit-message"),
+  type: z.literal("editMessage"),
   messageId: z.string().min(1),
   content: z.string().trim().min(1),
 });
