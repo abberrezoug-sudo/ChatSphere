@@ -134,7 +134,7 @@ export const handleMessage = async (
 
           break;
         }
-
+       
         try {
           const editedMessage = await messageService.editMessageForUser(
             result.data.messageId,
@@ -186,6 +186,41 @@ case "leaveRoom": {
 
   break;
 }
+
+case "deleteMessage": {
+  try {
+    const deletedMessage = await messageService.deleteMessage(
+      payload.messageId,
+      socket.userId!
+    );
+
+    if (!deletedMessage?.room) {
+      throw new Error("Message not found or already deleted");
+    }
+
+    broadcastToRoom(
+      deletedMessage.room.toString(),
+      {
+        type: "messageDeleted",
+        message: deletedMessage,
+      }
+    );
+  } catch (error) {
+    socket.send(
+      JSON.stringify({
+        type: "error",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Unable to delete message",
+      })
+    );
+  }
+
+  break;
+}
+
+
       default:
         console.log("❓ Type inconnu :", payload.type);
     }

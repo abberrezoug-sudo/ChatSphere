@@ -69,8 +69,18 @@ export class MessageService {
     return await messageRepository.editMessage(messageId, content);
   }
 
-  async deleteMessage(messageId: string) {
-    return await messageRepository.deleteMessage(messageId);
+ async deleteMessage(messageId: string, userId: string) {
+  const message = await messageRepository.findById(messageId);
+
+  if (!message) {
+    throw new Error("Message not found");
   }
+
+  if (message.sender.toString() !== userId) {
+    throw new Error("Unauthorized");
+  }
+
+  return await messageRepository.deleteMessage(messageId);
+}
 
 }
