@@ -245,6 +245,39 @@ case "stopTyping": {
   break;
 }
 
+case "seenMessage": {
+  try {
+    const message = await messageService.seenMessage(
+      payload.messageId,
+      socket.userId!
+    );
+
+    if (!message?.room) {
+      throw new Error("Message not found");
+    }
+
+    broadcastToRoom(
+      message.room.toString(),
+      {
+        type: "messageSeen",
+        message,
+      }
+    );
+  } catch (error) {
+    socket.send(
+      JSON.stringify({
+        type: "error",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Unable to mark message as seen",
+      })
+    );
+  }
+
+  break;
+}
+
       default:
         console.log("❓ Type inconnu :", payload.type);
     }

@@ -3,7 +3,12 @@ import { MessageRepository } from "../repositories/message.repository.js";
 import { MessageType } from "../models/message.model.js";
 
 const messageRepository = new MessageRepository();
-
+//handl err!! *****
+console.log("Repository =", messageRepository);
+console.log(
+  "Methods =",
+  Object.getOwnPropertyNames(Object.getPrototypeOf(messageRepository))
+);
 export class MessageService {
   async sendMessage(
     sender: string,
@@ -82,5 +87,16 @@ export class MessageService {
 
   return await messageRepository.deleteMessage(messageId);
 }
+async seenMessage(messageId: string, userId: string) {
+  const message = await messageRepository.findById(messageId);
 
+  if (!message) {
+    throw new Error("Message not found");
+  }
+
+  return await messageRepository.seenMessage(
+    messageId,
+    userId
+  );
+}
 }

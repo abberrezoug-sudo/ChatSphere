@@ -1,14 +1,9 @@
 import { Types } from "mongoose";
-import {
-  Message,
-  type IMessage,
-  MessageType,
-} from "../models/message.model.js";
+import { Message, IMessage, MessageType } from "../models/message.model.js";
 
 interface CreateMessagePayload {
   sender: Types.ObjectId;
-  receiver?: Types.ObjectId;
-  room?: string | Types.ObjectId;
+  room: Types.ObjectId;
   content: string;
   type?: MessageType;
 }
@@ -17,8 +12,7 @@ export class MessageRepository {
   async create(data: CreateMessagePayload): Promise<IMessage> {
     return await Message.create({
       sender: data.sender,
-      receiver: data.receiver,
-      room: data.room?.toString(),
+      room: data.room,
       content: data.content,
       type: data.type ?? MessageType.TEXT,
     });
@@ -27,30 +21,31 @@ export class MessageRepository {
   async findById(id: string): Promise<IMessage | null> {
     return await Message.findById(id)
       .populate("sender", "username avatar")
-      .populate("receiver", "username avatar");
+      .populate("room");
   }
 
   async findByIdRaw(id: string): Promise<IMessage | null> {
     return await Message.findById(id);
   }
 
-  async findByRoom(roomId: string, limit = 50): Promise<IMessage[]> {
-    const messages = await Message.find({
+  async findByRoom(
+    roomId: string,
+    limit = 50
+  ): Promise<IMessage[]> {
+    return await Message.find({
       room: roomId,
       deleted: false,
     })
       .populate("sender", "username avatar")
       .sort({ createdAt: -1 })
       .limit(limit);
-
-    return messages.reverse();
   }
 
   async editMessage(
     messageId: string,
     content: string
   ): Promise<IMessage | null> {
-    return await Message.findByIdAndUpdate(
+    await Message.findByIdAndUpdate(
       messageId,
       {
         content,
@@ -59,18 +54,38 @@ export class MessageRepository {
       {
         new: true,
       }
-    ).populate("sender", "username avatar");
+    );
+
+    return await this.findById(messageId);
   }
 
-  async deleteMessage(messageId: string): Promise<IMessage | null> {
-    return await Message.findByIdAndUpdate(
-      messageId,
-      {
-        deleted: true,
+  async deleteMessage(messageId: string) {
+  return await Message.findByIdAndUpdate(
+    messageId,
+    {
+      deleted: true,
+      content: "Ce message a été supprimé."
+    },
+    {
+      returnDocument: "after"
+    }
+  ).populate("sender", "username avatar");
+}
+//
+async seenMessage(messageId: string, userId: string) {
+  return await Message.findByIdAndUpdate(
+    messageId,
+    {
+      $addToSet: {
+        seenBy: {
+          user: userId,
+          seenAt: new Date(),
+        },
       },
-      {
-        new: true,
-      }
-    ).populate("sender", "username avatar");
-  }
+    },
+    {
+      returnDocument: "after",
+    }
+  ).populate("sender", "username avatar");
+}
 }
