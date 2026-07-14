@@ -26,6 +26,10 @@ export interface IMessage {
   seenBy: ISeenBy[];
   replyTo?: Types.ObjectId | null;
   reactions: IReaction[];
+  fileUrl?: string;
+  fileName?: string;
+  fileSize?: number;
+  mimeType?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -37,42 +41,35 @@ const messageSchema = new Schema<IMessage>(
       ref: "User",
       required: true,
     },
-
     room: {
       type: Schema.Types.ObjectId,
       ref: "Room",
       required: true,
       index: true,
     },
-
     content: {
       type: String,
       required: true,
       trim: true,
     },
-
     replyTo: {
       type: Schema.Types.ObjectId,
       ref: "Message",
       default: null,
     },
-
     type: {
       type: String,
       enum: Object.values(MessageType),
       default: MessageType.TEXT,
     },
-
     edited: {
       type: Boolean,
       default: false,
     },
-
     deleted: {
       type: Boolean,
       default: false,
     },
-
     seenBy: [
       {
         user: {
@@ -85,7 +82,6 @@ const messageSchema = new Schema<IMessage>(
         },
       },
     ],
-
     reactions: [
       {
         user: {
@@ -100,6 +96,22 @@ const messageSchema = new Schema<IMessage>(
         },
       },
     ],
+    fileUrl: {
+      type: String,
+      default: null,
+    },
+    fileName: {
+      type: String,
+      default: null,
+    },
+    fileSize: {
+      type: Number,
+      default: null,
+    },
+    mimeType: {
+      type: String,
+      default: null,
+    },
   },
   {
     timestamps: true,
