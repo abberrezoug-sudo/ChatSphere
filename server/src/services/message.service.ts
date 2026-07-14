@@ -14,7 +14,8 @@ export class MessageService {
     sender: string,
     room: string,
     content: string,
-    type: MessageType = MessageType.TEXT
+    type: MessageType = MessageType.TEXT,
+    replyTo?: string
   ) {
     if (!Types.ObjectId.isValid(sender)) {
       throw new Error("Invalid sender");
@@ -29,6 +30,7 @@ export class MessageService {
       room: new Types.ObjectId(room),
       content,
       type,
+      replyTo: replyTo ? new Types.ObjectId(replyTo) : undefined,
     });
   }
 
@@ -99,4 +101,5 @@ async seenMessage(messageId: string, userId: string) {
     userId
   );
 }
+
 }

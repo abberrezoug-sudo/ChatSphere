@@ -91,11 +91,18 @@ export const handleMessage = async (
 
       case "message": {
         console.log(`${socket.username} : ${payload.message}`);
-
+console.log({
+  userId: socket.userId,
+  room: payload.room,
+  message: payload.message,
+  replyTo: payload.replyTo,
+});
         const savedMessage = await messageService.sendMessage(
           socket.userId!,
           payload.room,
-          payload.message
+          payload.message,
+           undefined,
+  payload.replyTo
         );
 
         broadcastToRoom(payload.room, {

@@ -6,6 +6,7 @@ interface CreateMessagePayload {
   room: Types.ObjectId;
   content: string;
   type?: MessageType;
+   replyTo?: Types.ObjectId;
 }
 
 export class MessageRepository {
@@ -15,6 +16,7 @@ export class MessageRepository {
       room: data.room,
       content: data.content,
       type: data.type ?? MessageType.TEXT,
+       replyTo: data.replyTo ?? null,
     });
   }
 

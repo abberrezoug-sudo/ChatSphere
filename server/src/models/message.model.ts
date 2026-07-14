@@ -1,21 +1,25 @@
-import { Schema, model, Types, Document } from "mongoose";
+import { Schema, model, Types } from "mongoose";
 
 export enum MessageType {
   TEXT = "text",
   IMAGE = "image",
   FILE = "file",
-  PRIVATE = "private",
 }
 
-export interface IMessage extends Document {
-  _id: Types.ObjectId;
+export interface ISeenBy {
+  user: Types.ObjectId;
+  seenAt: Date;
+}
+
+export interface IMessage {
   sender: Types.ObjectId;
-  receiver?: Types.ObjectId;
-  room?: string;
+  room: Types.ObjectId;
   content: string;
   type: MessageType;
   edited: boolean;
   deleted: boolean;
+  seenBy: ISeenBy[];
+  replyTo?: Types.ObjectId | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -28,14 +32,10 @@ const messageSchema = new Schema<IMessage>(
       required: true,
     },
 
-    receiver: {
-      type: Schema.Types.ObjectId,
-      ref: "User",
-    },
-
     room: {
-      type: String,
-      trim: true,
+      type: Schema.Types.ObjectId,
+      ref: "Room",
+      required: true,
       index: true,
     },
 
@@ -43,6 +43,12 @@ const messageSchema = new Schema<IMessage>(
       type: String,
       required: true,
       trim: true,
+    },
+
+    replyTo: {
+      type: Schema.Types.ObjectId,
+      ref: "Message",
+      default: null,
     },
 
     type: {
@@ -60,6 +66,19 @@ const messageSchema = new Schema<IMessage>(
       type: Boolean,
       default: false,
     },
+
+    seenBy: [
+      {
+        user: {
+          type: Schema.Types.ObjectId,
+          ref: "User",
+        },
+        seenAt: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
   },
   {
     timestamps: true,

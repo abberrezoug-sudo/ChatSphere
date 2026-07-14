@@ -1,43 +1,52 @@
 import { Server } from "http";
 import { WebSocketServer } from "ws";
-
 import { handleConnection } from "../handlers/connection.handler.js";
-import { User } from "../models/User.js";
 import { AuthSocket } from "../types/socket.js";
-import { authenticateSocket } from "./auth.websocket.js";
+import { verifyAccessToken } from "../utils/jwt.js";
+import { User } from "../models/User.js";
 
-export const startWebSocketServer = (
-  server: Server
-) => {
-  const wss = new WebSocketServer({
-    server,
-  });
+export const startWebSocketServer = (server: Server) => {
+  const wss = new WebSocketServer({ server });
 
-  console.log("WebSocket Ready");
+  console.log("✅ WebSocket initialisé");
 
   wss.on("connection", async (socket, request) => {
     try {
-      const userId = authenticateSocket(request);
-      const user = await User.findById(userId);
+      const url = new URL(
+        request.url!,
+        `http://${request.headers.host}`
+      );
+
+      const token = url.searchParams.get("token");
+
+      if (!token) {
+        console.log("❌ Unauthorized WebSocket");
+        socket.close();
+        return;
+      }
+
+      const payload = verifyAccessToken(token);
+
+      const user = await User.findById(payload.userId);
 
       if (!user) {
-        socket.close(1008, "User not found");
+        console.log("❌ User not found");
+        socket.close();
         return;
       }
 
       const authSocket = socket as AuthSocket;
 
-      authSocket.userId = user.id;
+      authSocket.userId = user._id.toString();
       authSocket.username = user.username;
-      authSocket.rooms = new Set<string>();
 
-      console.log("Authenticated:", authSocket.username);
+      console.log(`Authenticated: ${user.username}`);
+      console.log(`${user.username} connected`);
 
       handleConnection(authSocket);
-    } catch {
-      console.log("Unauthorized WebSocket");
-
-      socket.close(1008, "Unauthorized");
+    } catch (error) {
+      console.log("❌ Unauthorized WebSocket");
+      socket.close();
     }
   });
 };
