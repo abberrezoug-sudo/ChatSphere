@@ -9,29 +9,49 @@ console.log(
   "Methods =",
   Object.getOwnPropertyNames(Object.getPrototypeOf(messageRepository))
 );
+//ADD interfac
+interface SendMessagePayload {
+  sender: string;
+  room: string;
+  content?: string;
+  type?: MessageType;
+
+  replyTo?: string;
+
+  fileUrl?: string;
+  fileName?: string;
+  fileSize?: number;
+  mimeType?: string;
+}
 export class MessageService {
-  async sendMessage(
-    sender: string,
-    room: string,
-    content: string,
-    type: MessageType = MessageType.TEXT,
-    replyTo?: string
-  ) {
-    if (!Types.ObjectId.isValid(sender)) {
+//sendMessageAsunchrounous
+  async sendMessage(data: SendMessagePayload) {
+    if (!Types.ObjectId.isValid(data.sender)) {
       throw new Error("Invalid sender");
     }
 
-    if (!Types.ObjectId.isValid(room)) {
+    if (!Types.ObjectId.isValid(data.room)) {
       throw new Error("Invalid room");
     }
 
-    return await messageRepository.create({
-      sender: new Types.ObjectId(sender),
-      room: new Types.ObjectId(room),
-      content,
-      type,
-      replyTo: replyTo ? new Types.ObjectId(replyTo) : undefined,
-    });
+   const message = await messageRepository.create({
+  sender: new Types.ObjectId(data.sender),
+  room: new Types.ObjectId(data.room),
+
+  content: data.content ?? "",
+
+  type: data.type ?? MessageType.TEXT,
+
+  replyTo: data.replyTo
+    ? new Types.ObjectId(data.replyTo)
+    : null,
+
+  fileUrl: data.fileUrl,
+  fileName: data.fileName,
+  fileSize: data.fileSize,
+  mimeType: data.mimeType,
+});
+
   }
 
   async getRoomMessages(roomId: string) {

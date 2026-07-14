@@ -6,7 +6,12 @@ interface CreateMessagePayload {
   room: Types.ObjectId;
   content: string;
   type?: MessageType;
-   replyTo?: Types.ObjectId;
+   replyTo?: Types.ObjectId | null;
+
+fileUrl?: string;
+fileName?: string;
+fileSize?: number;
+mimeType?: string;
 }
 
 export class MessageRepository {
@@ -17,6 +22,10 @@ export class MessageRepository {
       content: data.content,
       type: data.type ?? MessageType.TEXT,
        replyTo: data.replyTo ?? null,
+       fileUrl: data.fileUrl,
+  fileName: data.fileName,
+  fileSize: data.fileSize,
+  mimeType: data.mimeType,
     });
   }
 

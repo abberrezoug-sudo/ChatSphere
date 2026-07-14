@@ -97,13 +97,21 @@ console.log({
   message: payload.message,
   replyTo: payload.replyTo,
 });
-        const savedMessage = await messageService.sendMessage(
-          socket.userId!,
-          payload.room,
-          payload.message,
-           undefined,
-  payload.replyTo
-        );
+        const savedMessage = await messageService.sendMessage({
+  sender: socket.userId!,
+  room: payload.room,
+
+  content: payload.content,
+
+  type: payload.typeMessage,
+
+  replyTo: payload.replyTo,
+
+  fileUrl: payload.fileUrl,
+  fileName: payload.fileName,
+  fileSize: payload.fileSize,
+  mimeType: payload.mimeType,
+});
 
         broadcastToRoom(payload.room, {
           type: "message",
