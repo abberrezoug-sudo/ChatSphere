@@ -90,4 +90,33 @@ async seenMessage(messageId: string, userId: string) {
     }
   ).populate("sender", "username avatar");
 }
+async reactToMessage(
+  messageId: string,
+  userId: string,
+  emoji: string
+) {
+  const message = await Message.findById(messageId);
+
+  if (!message) {
+    return null;
+  }
+
+  const index = message.reactions.findIndex(
+    (reaction) =>
+      reaction.user.toString() === userId
+  );
+
+  if (index >= 0) {
+    message.reactions[index].emoji = emoji;
+  } else {
+    message.reactions.push({
+      user: new Types.ObjectId(userId),
+      emoji,
+    });
+  }
+
+  await message.save();
+
+  return await this.findById(messageId);
+}
 }

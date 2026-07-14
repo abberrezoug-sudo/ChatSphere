@@ -11,6 +11,11 @@ export interface ISeenBy {
   seenAt: Date;
 }
 
+export interface IReaction {
+  user: Types.ObjectId;
+  emoji: string;
+}
+
 export interface IMessage {
   sender: Types.ObjectId;
   room: Types.ObjectId;
@@ -20,6 +25,7 @@ export interface IMessage {
   deleted: boolean;
   seenBy: ISeenBy[];
   replyTo?: Types.ObjectId | null;
+  reactions: IReaction[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -76,6 +82,21 @@ const messageSchema = new Schema<IMessage>(
         seenAt: {
           type: Date,
           default: Date.now,
+        },
+      },
+    ],
+
+    reactions: [
+      {
+        user: {
+          type: Schema.Types.ObjectId,
+          ref: "User",
+          required: true,
+        },
+        emoji: {
+          type: String,
+          required: true,
+          trim: true,
         },
       },
     ],

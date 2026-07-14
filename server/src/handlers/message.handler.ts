@@ -284,11 +284,55 @@ case "seenMessage": {
 
   break;
 }
+//ADDCASEreactTomessage 
+case "reactMessage": {
+  try {
+    console.log("===== REACTION =====");
+    console.log("Payload :", payload);
+    console.log("User :", socket.userId);
 
+    const message = await messageService.reactToMessage(
+      payload.messageId,
+      socket.userId!,
+      payload.emoji
+    );
+
+    console.log("Résultat service :", message);
+
+    if (!message) {
+      throw new Error("reactToMessage returned null");
+    }
+
+    console.log("Room :", message.room);
+
+    broadcastToRoom(message.room.toString(), {
+      type: "messageReaction",
+      message,
+    });
+
+    console.log("Broadcast envoyé");
+  } catch (error) {
+    console.error("REACT ERROR :", error);
+
+    socket.send(
+      JSON.stringify({
+        type: "error",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Unable to react to message",
+      })
+    );
+  }
+
+  break;
+}
       default:
         console.log("❓ Type inconnu :", payload.type);
     }
   } catch (error) {
     console.error("❌ WebSocket Error:", error);
   }
+  //
+  
 };

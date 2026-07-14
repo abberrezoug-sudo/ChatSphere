@@ -101,5 +101,29 @@ async seenMessage(messageId: string, userId: string) {
     userId
   );
 }
+// reactToMessagewithEmoji  
+async reactToMessage(
+  messageId: string,
+  userId: string,
+  emoji: string
+) {
+  if (!Types.ObjectId.isValid(messageId)) {
+    throw new Error("Invalid message");
+  }
+
+  if (!Types.ObjectId.isValid(userId)) {
+    throw new Error("Invalid user");
+  }
+
+  if (!emoji || emoji.trim().length === 0) {
+    throw new Error("Emoji is required");
+  }
+
+  return await messageRepository.reactToMessage(
+    messageId,
+    userId,
+    emoji
+  );
+}
 
 }
