@@ -1,15 +1,15 @@
 import { RawData } from "ws";
 import { AuthSocket } from "../types/socket.js";
 
-import { addUser } from "../services/user.service.js";
+import { addUser, getSocketByUserId } from "../services/user.service.js";
 import { joinRoom, broadcastToRoom, leaveRoom } from "../services/room.service.js";
 import { MessageService } from "../services/message.service.js";
 import { RoomService } from "../services/room-db.service.js";
 import { editMessageSchema } from "../validators/message.validator.js";
-
+import { PrivateMessageService } from "../services/private-message.service.js";
 const messageService = new MessageService();
 const roomService = new RoomService();
-
+const privateMessageService = new PrivateMessageService();
 export const handleMessage = async (
   socket: AuthSocket,
   data: RawData
@@ -329,6 +329,58 @@ case "reactMessage": {
           error instanceof Error
             ? error.message
             : "Unable to react to message",
+      })
+    );
+  }
+
+  break;
+}
+case "privateMessage": {
+  try {
+    const message = await privateMessageService.send(
+      socket.userId!,
+      payload.receiverId,
+      payload.content
+    );
+
+    const receiver = getSocketByUserId(
+      payload.receiverId
+    );
+
+console.log("Sender :", socket.userId);
+console.log("Receiver ID :", payload.receiverId);
+console.log("Receiver Socket :", receiver);
+   if (receiver) {
+  console.log("✅ Receiver trouvé");
+
+  receiver.send(
+    JSON.stringify({
+      type: "privateMessage",
+      message,
+    })
+  );
+} else {
+  console.log("❌ Receiver introuvable");
+}
+
+    socket.send(
+      JSON.stringify({
+        type: "privateMessage",
+        message,
+      })
+    );
+
+    console.log(
+      `${socket.username} ➜ ${payload.receiverId}`
+    );
+  } catch (error) {
+    socket.send(
+      JSON.stringify({
+        type: "error",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Unable to send private message",
       })
     );
   }

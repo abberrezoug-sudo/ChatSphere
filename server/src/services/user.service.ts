@@ -1,40 +1,40 @@
-import { WebSocket } from "ws";
+import { AuthSocket } from "../types/socket.js";
 
-const users = new Map<WebSocket, string>();
-const userSockets = new Map<string, WebSocket>();
+const users = new Map<AuthSocket, string>();
+const userSockets = new Map<string, AuthSocket>();
 
 export const addUser = (
-  socket: WebSocket,
-  username: string
+  socket: AuthSocket,
+  userId: string
 ): void => {
-  users.set(socket, username);
-  userSockets.set(username, socket);
+  users.set(socket, userId);
+  userSockets.set(userId, socket);
 
-  console.log(`${username} connected`);
+  console.log(`${socket.username} connected`);
 };
 
 export const removeUser = (
-  socket: WebSocket
+  socket: AuthSocket
 ): void => {
-  const username = users.get(socket);
+  const userId = users.get(socket);
 
-  if (username) {
-    userSockets.delete(username);
+  if (userId) {
+    userSockets.delete(userId);
   }
 
   users.delete(socket);
 };
 
-export const getUsername = (
-  socket: WebSocket
+export const getUserId = (
+  socket: AuthSocket
 ): string | undefined => {
   return users.get(socket);
 };
 
-export const getSocketByUsername = (
-  username: string
-): WebSocket | undefined => {
-  return userSockets.get(username);
+export const getSocketByUserId = (
+  userId: string
+): AuthSocket | undefined => {
+  return userSockets.get(userId);
 };
 
 export const getOnlineCount = (): number => {
