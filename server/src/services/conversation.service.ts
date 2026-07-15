@@ -23,6 +23,13 @@ export class ConversationService {
           : sender;
 
       if (!privateMap.has(otherUser._id.toString())) {
+
+        const unreadCount =
+          await privateMessageRepository.countUnreadMessages(
+            userId,
+            otherUser._id.toString()
+          );
+
         privateMap.set(otherUser._id.toString(), {
           type: "private",
 
@@ -41,7 +48,7 @@ export class ConversationService {
 
           createdAt: message.createdAt,
 
-          unreadCount: 0,
+          unreadCount,
         });
       }
     }
@@ -55,6 +62,12 @@ export class ConversationService {
     for (const room of rooms) {
       const lastMessage =
         await messageRepository.getLastMessage(room._id.toString());
+
+      const unreadCount =
+        await messageRepository.countUnreadRoomMessages(
+          room._id.toString(),
+          userId
+        );
 
       roomConversations.push({
         type: "room",
@@ -76,7 +89,7 @@ export class ConversationService {
 
         createdAt: lastMessage?.createdAt ?? room.createdAt,
 
-        unreadCount: 0,
+        unreadCount,
       });
     }
 

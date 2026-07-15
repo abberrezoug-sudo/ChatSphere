@@ -135,4 +135,25 @@ async getLastMessage(roomId: string) {
     .populate("sender", "username avatar")
     .sort({ createdAt: -1 });
 }
+//unreadCount
+async countUnreadRoomMessages(
+  roomId: string,
+  userId: string
+) {
+  return await Message.countDocuments({
+    room: roomId,
+
+    sender: {
+      $ne: new Types.ObjectId(userId),
+    },
+
+    seenBy: {
+      $not: {
+        $elemMatch: {
+          user: new Types.ObjectId(userId),
+        },
+      },
+    },
+  });
+}
 }

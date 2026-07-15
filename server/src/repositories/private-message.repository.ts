@@ -163,4 +163,21 @@ export class PrivateMessageRepository {
     .populate("receiver", "username avatar")
     .sort({ createdAt: -1 });
 }
+//unredAsync getUnreadCount(userId: string) {
+async countUnreadMessages(
+  userId: string,
+  otherUserId: string
+) {
+  return await PrivateMessage.countDocuments({
+    sender: otherUserId,
+    receiver: userId,
+    seenBy: {
+      $not: {
+        $elemMatch: {
+          user: new Types.ObjectId(userId),
+        },
+      },
+    },
+  });
+}
 }
