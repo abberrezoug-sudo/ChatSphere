@@ -60,4 +60,9 @@ async removeMember(roomId: string, userId: string): Promise<IRoom | null> {
     }
   );
 }
+async getUserRooms(userId: string) {
+  return Room.find({
+    members: userId,
+  }).populate("owner", "username avatar");
+}
 }

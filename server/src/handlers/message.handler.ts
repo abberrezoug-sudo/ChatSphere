@@ -11,7 +11,7 @@ import {
   editPrivateMessageSchema,
   reactPrivateMessageSchema,
 } from "../validators/Private.message.validator.js";
-
+import { handleGetConversations } from "./conversation.handler.js";
 const messageService = new MessageService();
 const roomService = new RoomService();
 const privateMessageService = new PrivateMessageService();
@@ -356,7 +356,11 @@ export const handleMessage = async (
 
         break;
       }
+case "getConversations": {
+  await handleGetConversations(socket);
 
+  break;
+}
       // ============================================================
       // ===================  CHAT PRIVÉ (DM)  =========================
       // ============================================================

@@ -152,4 +152,15 @@ export class PrivateMessageRepository {
 
     return await this.findById(messageId);
   }
+  async getUserMessages(userId: string) {
+  return PrivateMessage.find({
+    $or: [
+      { sender: userId },
+      { receiver: userId }
+    ]
+  })
+    .populate("sender", "username avatar")
+    .populate("receiver", "username avatar")
+    .sort({ createdAt: -1 });
+}
 }

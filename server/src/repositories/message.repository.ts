@@ -128,4 +128,11 @@ async reactToMessage(
 
   return await this.findById(messageId);
 }
+async getLastMessage(roomId: string) {
+  return Message.findOne({
+    room: roomId
+  })
+    .populate("sender", "username avatar")
+    .sort({ createdAt: -1 });
+}
 }
