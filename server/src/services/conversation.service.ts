@@ -1,7 +1,7 @@
 import { PrivateMessageRepository } from "../repositories/private-message.repository.js";
 import { RoomRepository } from "../repositories/room.repository.js";
 import { MessageRepository } from "../repositories/message.repository.js";
-
+import { isOnline } from "./user.service.js";
 const privateMessageRepository = new PrivateMessageRepository();
 const roomRepository = new RoomRepository();
 const messageRepository = new MessageRepository();
@@ -37,6 +37,7 @@ export class ConversationService {
             _id: otherUser._id,
             username: otherUser.username,
             avatar: otherUser.avatar,
+             online: isOnline(otherUser._id.toString())
           },
 
           lastMessage: {

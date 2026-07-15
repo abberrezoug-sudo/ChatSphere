@@ -2,7 +2,7 @@ import { AuthSocket } from "../types/socket.js";
 
 const users = new Map<AuthSocket, string>();
 const userSockets = new Map<string, AuthSocket>();
-
+const onlineUsers = new Map<string, AuthSocket>();
 export const addUser = (
   socket: AuthSocket,
   userId: string
@@ -39,4 +39,12 @@ export const getSocketByUserId = (
 
 export const getOnlineCount = (): number => {
   return users.size;
+};
+//Online user
+export const isOnline = (userId: string) => {
+  return onlineUsers.has(userId);
+};
+
+export const getOnlineUsers = () => {
+  return [...onlineUsers.keys()];
 };
