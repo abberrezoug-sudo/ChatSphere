@@ -14,6 +14,14 @@ import {
 import { handleGetConversations } from "./conversation.handler.js";
 import { NotificationService } from "../services/notification.service.js";
 import { RoomRepository } from "../repositories/room.repository.js";
+import { PinnedMessageService } from "../services/pinned-message.service.js";
+import {
+  pinMessageSchema,
+  unpinMessageSchema,
+  getPinnedMessagesSchema,
+} from "../validators/pinned-message.validator.js";
+
+const pinnedMessageService = new PinnedMessageService();
 const messageService = new MessageService();
 const roomService = new RoomService();
 const privateMessageService = new PrivateMessageService();
@@ -726,6 +734,123 @@ case "unreadNotificationCount": {
     );
 
     break;
+}
+////////pign case/////////////////////////////
+//////////////////////////////////////
+case "pinMessage": {
+  const result = pinMessageSchema.safeParse(payload);
+
+  if (!result.success) {
+    socket.send(
+      JSON.stringify({
+        type: "error",
+        message: "Invalid pin message payload",
+      })
+    );
+
+    break;
+  }
+
+  try {
+    const pin = await pinnedMessageService.pinMessage(
+      result.data.messageId,
+      result.data.roomId,
+      socket.userId!
+    );
+
+    broadcastToRoom(result.data.roomId, {
+      type: "messagePinned",
+      pin,
+    });
+  } catch (error) {
+    socket.send(
+      JSON.stringify({
+        type: "error",
+        message:
+          error instanceof Error ? error.message : "Unable to pin message",
+      })
+    );
+  }
+
+  break;
+}
+
+case "unpinMessage": {
+  const result = unpinMessageSchema.safeParse(payload);
+
+  if (!result.success) {
+    socket.send(
+      JSON.stringify({
+        type: "error",
+        message: "Invalid unpin message payload",
+      })
+    );
+
+    break;
+  }
+
+  try {
+    const pin = await pinnedMessageService.unpinMessage(
+      result.data.messageId,
+      result.data.roomId
+    );
+
+    broadcastToRoom(result.data.roomId, {
+      type: "messageUnpinned",
+      pin,
+    });
+  } catch (error) {
+    socket.send(
+      JSON.stringify({
+        type: "error",
+        message:
+          error instanceof Error ? error.message : "Unable to unpin message",
+      })
+    );
+  }
+
+  break;
+}
+
+case "getPinnedMessages": {
+  const result = getPinnedMessagesSchema.safeParse(payload);
+
+  if (!result.success) {
+    socket.send(
+      JSON.stringify({
+        type: "error",
+        message: "Invalid get pinned messages payload",
+      })
+    );
+
+    break;
+  }
+
+  try {
+    const pinnedMessages = await pinnedMessageService.getPinnedMessages(
+      result.data.roomId
+    );
+
+    socket.send(
+      JSON.stringify({
+        type: "pinnedMessages",
+        roomId: result.data.roomId,
+        pinnedMessages,
+      })
+    );
+  } catch (error) {
+    socket.send(
+      JSON.stringify({
+        type: "error",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Unable to fetch pinned messages",
+      })
+    );
+  }
+
+  break;
 }
       default:
         console.log("❓ Type inconnu :", payload.type);
