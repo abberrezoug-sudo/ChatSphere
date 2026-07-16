@@ -156,4 +156,10 @@ async countUnreadRoomMessages(
     },
   });
 }
+///////////////////
+async findSender(messageId: string) {
+  return await Message.findById(messageId)
+    .select("sender")
+    .populate("sender", "username avatar");
+}
 }

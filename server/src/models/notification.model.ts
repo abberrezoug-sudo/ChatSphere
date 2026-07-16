@@ -3,6 +3,8 @@ import { Schema, model, Types } from "mongoose";
 export enum NotificationType {
   PRIVATE_MESSAGE = "private_message",
   ROOM_MESSAGE = "room_message",
+    REACTION = "reaction",
+
 }
 
 export interface INotification {

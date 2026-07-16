@@ -1,9 +1,11 @@
 import { Types } from "mongoose";
 import { PrivateMessageType } from "../models/private-message.model.js";
 import { PrivateMessageRepository } from "../repositories/private-message.repository.js";
+import { NotificationService } from "./notification.service.js";
 
+const notificationService = new NotificationService();
 const repository = new PrivateMessageRepository();
-const notificationService = new (await import("./notification.service.js")).NotificationService();
+
 interface SendPrivateMessagePayload {
   sender: string;
   receiver: string;
@@ -46,7 +48,6 @@ export class PrivateMessageService {
       fileSize: data.fileSize,
       mimeType: data.mimeType,
     });
-
   }
 
   async getConversation(
@@ -86,11 +87,7 @@ export class PrivateMessageService {
     return message;
   }
 
-  async editMessageForUser(
-    messageId: string,
-    userId: string,
-    content: string
-  ) {
+  async editMessageForUser(messageId: string, userId: string, content: string) {
     const message = await repository.findByIdRaw(messageId);
 
     if (!message) {
@@ -132,9 +129,21 @@ export class PrivateMessageService {
     return await repository.seenMessage(messageId, userId);
   }
 
-  async reactToMessage(messageId: string, userId: string, emoji: string) {
-    await this.assertParticipant(messageId, userId);
+ async reactToMessage(messageId: string, userId: string, emoji: string) {
+  const message = await this.assertParticipant(messageId, userId);
 
-    return await repository.reactToMessage(messageId, userId, emoji);
+  const updatedMessage = await repository.reactToMessage(messageId, userId, emoji);
+
+  let notification = null;
+
+  if (message.sender.toString() !== userId) {
+    notification = await notificationService.createReactionNotification(
+      userId,
+      message.sender.toString(),
+      emoji
+    );
   }
+
+  return { message: updatedMessage, notification };
+}
 }

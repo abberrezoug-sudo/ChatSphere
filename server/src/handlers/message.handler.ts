@@ -113,7 +113,7 @@ export const handleMessage = async (
         break;
       }
 
-      case "message": {
+     case "message": {
   try {
     console.log(`${socket.username} : ${payload.content}`);
 
@@ -129,48 +129,27 @@ export const handleMessage = async (
       mimeType: payload.mimeType,
     });
 
-    console.log("✅ Message sauvegardé :", savedMessage);
-
     const room = await roomRepository.getMembers(payload.room);
 
-    console.log("ROOM =", room);
-
     if (room) {
-      console.log("MEMBRES =", room.members.length);
-
       for (const member of room.members as any[]) {
-        console.log("MEMBRE :", member.username);
-
         if (member._id.toString() === socket.userId) {
-          console.log("⏭️ Expéditeur ignoré");
           continue;
         }
 
-        console.log("Création notification...");
-
-        const notification =
-          await notificationService.createRoomNotification(
-            socket.userId!,
-            member._id.toString(),
-            room.name,
-            savedMessage.content
-          );
-
-        console.log("✅ Notification créée :", notification);
+        const notification = await notificationService.createRoomNotification(
+          socket.userId!,
+          member._id.toString(),
+          room.name,
+          savedMessage.content
+        );
 
         const memberSocket = getSocketByUserId(member._id.toString());
 
-        console.log("Socket :", memberSocket ? "Trouvé" : "Non trouvé");
-
         if (memberSocket) {
           memberSocket.send(
-            JSON.stringify({
-              type: "notification",
-              notification,
-            })
+            JSON.stringify({ type: "notification", notification })
           );
-
-          console.log("📨 Notification envoyée");
         }
       }
     }
@@ -179,28 +158,18 @@ export const handleMessage = async (
       type: "message",
       message: savedMessage,
     });
-
-  } catch (err) {
-    console.error("❌ ERREUR :", err);
+  } catch (error) {
+    socket.send(
+      JSON.stringify({
+        type: "error",
+        message:
+          error instanceof Error ? error.message : "Unable to send message",
+      })
+    );
   }
 
   break;
 }
-      case "history": {
-        const messages = await messageService.getRoomMessages(
-          payload.room
-        );
-
-        socket.send(
-          JSON.stringify({
-            type: "history",
-            room: payload.room,
-            messages,
-          })
-        );
-
-        break;
-      }
       case "editMessage": {
         const result = editMessageSchema.safeParse(payload);
 
@@ -626,52 +595,60 @@ case "getConversations": {
         break;
       }
 
-      case "reactPrivateMessage": {
-        const result = reactPrivateMessageSchema.safeParse(payload);
+     case "reactPrivateMessage": {
+  const result = reactPrivateMessageSchema.safeParse(payload);
 
-        if (!result.success) {
-          socket.send(
-            JSON.stringify({
-              type: "error",
-              message: "Invalid react private message payload",
-            })
-          );
+  if (!result.success) {
+    socket.send(
+      JSON.stringify({
+        type: "error",
+        message: "Invalid react private message payload",
+      })
+    );
 
-          break;
-        }
+    break;
+  }
 
-        try {
-          const message = await privateMessageService.reactToMessage(
-            result.data.messageId,
-            socket.userId!,
-            result.data.emoji
-          );
+  try {
+    const { message, notification } =
+      await privateMessageService.reactToMessage(
+        result.data.messageId,
+        socket.userId!,
+        result.data.emoji
+      );
 
-          if (!message) {
-            throw new Error("reactToMessage returned null");
-          }
+    if (!message) {
+      throw new Error("reactToMessage returned null");
+    }
 
-          const payloadOut = {
-            type: "privateMessageReaction",
-            message,
-          };
+    if (notification) {
+      sendToUser(idOf(message.sender), {
+        type: "notification",
+        notification,
+      });
+    }
 
-          sendToUser(idOf(message.sender), payloadOut);
-          sendToUser(idOf(message.receiver), payloadOut);
-        } catch (error) {
-          socket.send(
-            JSON.stringify({
-              type: "error",
-              message:
-                error instanceof Error
-                  ? error.message
-                  : "Unable to react to private message",
-            })
-          );
-        }
+    const payloadOut = {
+      type: "privateMessageReaction",
+      message,
+    };
 
-        break;
-      }
+    sendToUser(idOf(message.sender), payloadOut);
+    sendToUser(idOf(message.receiver), payloadOut);
+  } catch (error) {
+    socket.send(
+      JSON.stringify({
+        type: "error",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Unable to react to private message",
+      })
+    );
+  }
+
+  break;
+}
 
       // payload: { type: "typingPrivate", receiverId }
       case "typingPrivate": {

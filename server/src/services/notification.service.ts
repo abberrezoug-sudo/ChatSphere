@@ -59,4 +59,25 @@ async createRoomNotification(
 
     });
 }
+////////////////REACTION notif/////////
+async createReactionNotification(
+  sender: string,
+  receiver: string,
+  emoji: string
+) {
+
+  return repository.create({
+
+    sender,
+
+    receiver,
+
+    type: NotificationType.REACTION,
+
+    title: "Nouvelle réaction",
+
+    body: `a réagi avec ${emoji}`
+
+  });
+}
 }
