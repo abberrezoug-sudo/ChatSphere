@@ -858,6 +858,37 @@ case "getPinnedMessages": {
 
   break;
 }
+////////////////////mesage history////////////
+//////////////////////////////////////////////
+case "roomHistory": {
+  try {
+    const history = await messageService.getRoomMessages(
+      payload.roomId,
+      payload.limit ?? 20,
+      payload.before
+    );
+
+    socket.send(
+      JSON.stringify({
+        type: "roomHistory",
+        messages: history.messages,
+        hasMore: history.hasMore,
+      })
+    );
+  } catch (error) {
+    socket.send(
+      JSON.stringify({
+        type: "error",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Unable to load room history",
+      })
+    );
+  }
+
+  break;
+}
       default:
         console.log("❓ Type inconnu :", payload.type);
     }

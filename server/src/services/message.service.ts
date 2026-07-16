@@ -43,13 +43,21 @@ export class MessageService {
     return message;
   }
 
-  async getRoomMessages(roomId: string) {
-    if (!Types.ObjectId.isValid(roomId)) {
-      throw new Error("Invalid room");
-    }
-
-    return await messageRepository.findByRoom(roomId, 50);
+  async getRoomMessages(
+  roomId: string,
+  limit = 20,
+  before?: string
+) {
+  if (!Types.ObjectId.isValid(roomId)) {
+    throw new Error("Invalid room");
   }
+
+  return await messageRepository.findByRoom(
+    roomId,
+    limit,
+    before
+  );
+}
 
   async editMessage(messageId: string, content: string) {
     return await messageRepository.editMessage(messageId, content);

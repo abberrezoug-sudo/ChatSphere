@@ -40,18 +40,38 @@ export class MessageRepository {
   }
 
   async findByRoom(
-    roomId: string,
-    limit = 50
-  ): Promise<IMessage[]> {
-    return await Message.find({
-      room: roomId,
-      deleted: false,
-    })
-      .populate("sender", "username avatar")
-      .sort({ createdAt: -1 })
-      .limit(limit);
+  roomId: string,
+  limit = 20,
+  before?: string
+) {
+  const query: any = {
+    room: roomId,
+    deleted: false,
+  };
+
+  if (before) {
+    query.createdAt = {
+      $lt: new Date(before),
+    };
   }
 
+  const messages = await Message.find(query)
+    .populate("sender", "username avatar")
+    .sort({
+      createdAt: -1,
+    })
+    .limit(limit + 1);
+
+  const hasMore = messages.length > limit;
+
+  return {
+    messages: hasMore
+      ? messages.slice(0, limit)
+      : messages,
+
+    hasMore,
+  };
+}
   async editMessage(
     messageId: string,
     content: string
