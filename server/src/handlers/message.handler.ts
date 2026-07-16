@@ -457,39 +457,28 @@ case "getConversations": {
 }
       // Historique paginé d'une conversation privée.
       // payload: { type: "privateHistory", withUserId, limit?, before? }
-      case "privateHistory": {
-        try {
-          const messages = await privateMessageService.getConversation(
-            socket.userId!,
-            payload.withUserId,
-            {
-              limit: payload.limit,
-              before: payload.before,
-            }
-          );
+     case "privateHistory": {
 
-          socket.send(
-            JSON.stringify({
-              type: "privateHistory",
-              withUserId: payload.withUserId,
-              messages,
-            })
-          );
-        } catch (error) {
-          socket.send(
-            JSON.stringify({
-              type: "error",
-              message:
-                error instanceof Error
-                  ? error.message
-                  : "Unable to fetch private history",
-            })
-          );
-        }
+  console.log("Payload :", payload);
+  console.log("receiverId :", payload.receiverId);
 
-        break;
-      }
+  const history = await privateMessageService.getConversation(
+    socket.userId!,
+    payload.receiverId,
+    payload.limit ?? 20,
+    payload.before
+  );
 
+  socket.send(
+    JSON.stringify({
+      type: "privateHistory",
+      messages: history.messages,
+      hasMore: history.hasMore,
+    })
+  );
+
+  break;
+}
       case "editPrivateMessage": {
         const result = editPrivateMessageSchema.safeParse(payload);
 

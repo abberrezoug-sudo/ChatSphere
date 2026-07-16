@@ -53,46 +53,50 @@ export class PrivateMessageRepository {
    * Utiliser `before` (createdAt d'un message) pour paginer vers le passé.
    */
   async findConversation(
-    userA: string,
-    userB: string,
-    options: FindConversationOptions = {}
-  ) {
-    const limit = options.limit ?? 50;
+  userA: string,
+  userB: string,
+  limit = 20,
+  before?: string
+) {
+  const query: any = {
+    deleted: false,
 
-    const query: Record<string, unknown> = {
-      deleted: false,
-      $or: [
-        { sender: userA, receiver: userB },
-        { sender: userB, receiver: userA },
-      ],
-    };
-
-    if (options.before) {
-      query.createdAt = { $lt: options.before };
-    }
-
-    return await PrivateMessage.find(query)
-      .populate("sender", "username avatar")
-      .populate("receiver", "username avatar")
-      .sort({ createdAt: -1 })
-      .limit(limit);
-  }
-
-  async editMessage(messageId: string, content: string) {
-    await PrivateMessage.findByIdAndUpdate(
-      messageId,
+    $or: [
       {
-        content,
-        edited: true,
+        sender: userA,
+        receiver: userB,
       },
       {
-        new: true,
-      }
-    );
+        sender: userB,
+        receiver: userA,
+      },
+    ],
+  };
 
-    return await this.findById(messageId);
+  if (before) {
+    query.createdAt = {
+      $lt: new Date(before),
+    };
   }
 
+  const messages = await PrivateMessage.find(query)
+    .populate("sender", "username avatar")
+    .populate("receiver", "username avatar")
+    .sort({
+      createdAt: -1,
+    })
+    .limit(limit + 1);
+
+  const hasMore = messages.length > limit;
+
+  return {
+    messages: hasMore
+      ? messages.slice(0, limit)
+      : messages,
+
+    hasMore,
+  };
+}
   async deleteMessage(messageId: string) {
     return await PrivateMessage.findByIdAndUpdate(
       messageId,
@@ -180,5 +184,20 @@ async countUnreadMessages(
     },
   });
 }
+ async editMessage(messageId: string, content: string) {
+    await PrivateMessage.findByIdAndUpdate(
+      messageId,
+      {
+        content,
+        edited: true,
+      },
+      {
+        new: true,
+      }
+    );
+
+    return await this.findById(messageId);
+  }
+
 
 }

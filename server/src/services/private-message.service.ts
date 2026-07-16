@@ -51,20 +51,22 @@ export class PrivateMessageService {
   }
 
   async getConversation(
-    userId: string,
-    withUserId: string,
-    options: GetConversationOptions = {}
-  ) {
-    if (!Types.ObjectId.isValid(withUserId)) {
-      throw new Error("Invalid conversation partner");
-    }
-
-    return await repository.findConversation(userId, withUserId, {
-      limit: options.limit,
-      before: options.before ? new Date(options.before) : undefined,
-    });
+  userId: string,
+  withUserId: string,
+  limit = 20,
+  before?: string
+) {
+  if (!Types.ObjectId.isValid(withUserId)) {
+    throw new Error("Invalid user");
   }
 
+  return await repository.findConversation(
+    userId,
+    withUserId,
+    limit,
+    before
+  );
+}
   /**
    * Vérifie que l'utilisateur est bien l'expéditeur ou le destinataire du
    * message (seuls les deux participants ont le droit d'agir dessus).

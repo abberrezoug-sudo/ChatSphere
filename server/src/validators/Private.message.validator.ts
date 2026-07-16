@@ -23,3 +23,10 @@ export const reactPrivateMessageSchema = z.object({
 export type ReactPrivateMessageInput = z.infer<
   typeof reactPrivateMessageSchema
 >;
+export const privateHistorySchema = z.object({
+  receiverId: z.string(),
+
+  limit: z.number().optional(),
+
+  before: z.string().optional(),
+});
