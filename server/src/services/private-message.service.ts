@@ -2,9 +2,11 @@ import { Types } from "mongoose";
 import { PrivateMessageType } from "../models/private-message.model.js";
 import { PrivateMessageRepository } from "../repositories/private-message.repository.js";
 import { NotificationService } from "./notification.service.js";
+import { UserBlockService } from "./user-block.service.js";
 
 const notificationService = new NotificationService();
 const repository = new PrivateMessageRepository();
+const userBlockService = new UserBlockService();
 
 interface SendPrivateMessagePayload {
   sender: string;
@@ -36,6 +38,9 @@ export class PrivateMessageService {
     if (data.replyTo && !Types.ObjectId.isValid(data.replyTo)) {
       throw new Error("Invalid replyTo");
     }
+
+    await userBlockService.assertNoBlockBetween(data.sender, data.receiver);
+    await userBlockService.assertCanMention(data.sender, data.content);
 
     return await repository.create({
       sender: new Types.ObjectId(data.sender),
@@ -133,6 +138,13 @@ export class PrivateMessageService {
 
  async reactToMessage(messageId: string, userId: string, emoji: string) {
   const message = await this.assertParticipant(messageId, userId);
+
+  const otherUser =
+    message.sender.toString() === userId
+      ? message.receiver.toString()
+      : message.sender.toString();
+
+  await userBlockService.assertNoBlockBetween(userId, otherUser);
 
   const updatedMessage = await repository.reactToMessage(messageId, userId, emoji);
 

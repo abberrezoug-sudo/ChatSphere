@@ -21,12 +21,20 @@ import {
   getPinnedMessagesSchema,
 } from "../validators/pinned-message.validator.js";
 import { handleSearch } from "./search.handler.js";
+import { UserBlockService } from "../services/user-block.service.js";
+import { ArchivedConversationService } from "../services/archived-conversation.service.js";
+import { RoomInvitationService } from "../services/room-invitation.service.js";
+import { ArchivedConversationType } from "../models/archived-conversation.model.js";
+import { RoomRole } from "../models/room.model.js";
 const pinnedMessageService = new PinnedMessageService();
 const messageService = new MessageService();
 const roomService = new RoomService();
 const privateMessageService = new PrivateMessageService();
 const notificationService = new NotificationService();
 const roomRepository = new RoomRepository();
+const userBlockService = new UserBlockService();
+const archivedConversationService = new ArchivedConversationService();
+const roomInvitationService = new RoomInvitationService();
 // Le chat privé n'a pas de "room" WebSocket à broadcaster : on envoie donc
 // directement au(x) socket(s) des participants concernés.
 const sendToUser = (userId: string, payload: unknown) => {
@@ -816,7 +824,8 @@ case "unpinMessage": {
   try {
     const pin = await pinnedMessageService.unpinMessage(
       result.data.messageId,
-      result.data.roomId
+      result.data.roomId,
+      socket.userId!
     );
 
     broadcastToRoom(result.data.roomId, {
@@ -876,6 +885,438 @@ case "getPinnedMessages": {
       })
     );
   }
+
+  break;
+}
+
+case "setRoomRole": {
+  try {
+    const room = await roomService.setRole(
+      payload.roomId,
+      socket.userId!,
+      payload.userId,
+      payload.role as RoomRole
+    );
+
+    broadcastToRoom(payload.roomId, {
+      type: "roomRoleUpdated",
+      room,
+    });
+  } catch (error) {
+    socket.send(
+      JSON.stringify({
+        type: "error",
+        message:
+          error instanceof Error ? error.message : "Unable to update role",
+      })
+    );
+  }
+
+  break;
+}
+
+case "transferRoomOwnership": {
+  try {
+    const room = await roomService.transferOwnership(
+      payload.roomId,
+      socket.userId!,
+      payload.userId
+    );
+
+    broadcastToRoom(payload.roomId, {
+      type: "roomOwnershipTransferred",
+      room,
+    });
+  } catch (error) {
+    socket.send(
+      JSON.stringify({
+        type: "error",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Unable to transfer ownership",
+      })
+    );
+  }
+
+  break;
+}
+
+case "removeRoomUser": {
+  try {
+    const room = await roomService.removeUser(
+      payload.roomId,
+      socket.userId!,
+      payload.userId
+    );
+
+    broadcastToRoom(payload.roomId, {
+      type: "roomUserRemoved",
+      room,
+      userId: payload.userId,
+    });
+  } catch (error) {
+    socket.send(
+      JSON.stringify({
+        type: "error",
+        message:
+          error instanceof Error ? error.message : "Unable to remove user",
+      })
+    );
+  }
+
+  break;
+}
+
+case "updateRoomSettings": {
+  try {
+    const room = await roomService.updateSettings(
+      payload.roomId,
+      socket.userId!,
+      {
+        name: payload.name,
+        description: payload.description,
+        isPrivate: payload.isPrivate,
+      }
+    );
+
+    broadcastToRoom(payload.roomId, {
+      type: "roomSettingsUpdated",
+      room,
+    });
+  } catch (error) {
+    socket.send(
+      JSON.stringify({
+        type: "error",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Unable to update room settings",
+      })
+    );
+  }
+
+  break;
+}
+
+case "deleteRoom": {
+  try {
+    const room = await roomService.deleteRoom(
+      payload.roomId,
+      socket.userId!
+    );
+
+    broadcastToRoom(payload.roomId, {
+      type: "roomDeleted",
+      room,
+    });
+  } catch (error) {
+    socket.send(
+      JSON.stringify({
+        type: "error",
+        message:
+          error instanceof Error ? error.message : "Unable to delete room",
+      })
+    );
+  }
+
+  break;
+}
+
+case "inviteRoomUser": {
+  try {
+    const invitation = await roomInvitationService.inviteUser({
+      roomId: payload.roomId,
+      invitedBy: socket.userId!,
+      invitedUser: payload.userId,
+      expiresAt: payload.expiresAt,
+      maxUses: payload.maxUses,
+    });
+
+    socket.send(
+      JSON.stringify({
+        type: "roomInvitationCreated",
+        invitation,
+      })
+    );
+
+    sendToUser(payload.userId, {
+      type: "roomInvitationReceived",
+      invitation,
+    });
+  } catch (error) {
+    socket.send(
+      JSON.stringify({
+        type: "error",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Unable to create invitation",
+      })
+    );
+  }
+
+  break;
+}
+
+case "createRoomInviteLink": {
+  try {
+    const invitation = await roomInvitationService.createInviteLink({
+      roomId: payload.roomId,
+      invitedBy: socket.userId!,
+      expiresAt: payload.expiresAt,
+      maxUses: payload.maxUses,
+    });
+
+    socket.send(
+      JSON.stringify({
+        type: "roomInviteLinkCreated",
+        invitation,
+      })
+    );
+  } catch (error) {
+    socket.send(
+      JSON.stringify({
+        type: "error",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Unable to create invite link",
+      })
+    );
+  }
+
+  break;
+}
+
+case "acceptRoomInvitation": {
+  try {
+    const invitation = await roomInvitationService.acceptInvitation(
+      payload.token,
+      socket.userId!
+    );
+
+    if (invitation?.room) {
+      joinRoom(invitation.room.toString(), socket);
+    }
+
+    socket.send(
+      JSON.stringify({
+        type: "roomInvitationAccepted",
+        invitation,
+      })
+    );
+  } catch (error) {
+    socket.send(
+      JSON.stringify({
+        type: "error",
+        message:
+          error instanceof Error ? error.message : "Unable to accept invitation",
+      })
+    );
+  }
+
+  break;
+}
+
+case "rejectRoomInvitation": {
+  try {
+    const invitation = await roomInvitationService.rejectInvitation(
+      payload.token,
+      socket.userId!
+    );
+
+    socket.send(
+      JSON.stringify({
+        type: "roomInvitationRejected",
+        invitation,
+      })
+    );
+  } catch (error) {
+    socket.send(
+      JSON.stringify({
+        type: "error",
+        message:
+          error instanceof Error ? error.message : "Unable to reject invitation",
+      })
+    );
+  }
+
+  break;
+}
+
+case "revokeRoomInvitation": {
+  try {
+    const invitation = await roomInvitationService.revokeInvitation(
+      payload.invitationId,
+      socket.userId!
+    );
+
+    socket.send(
+      JSON.stringify({
+        type: "roomInvitationRevoked",
+        invitation,
+      })
+    );
+  } catch (error) {
+    socket.send(
+      JSON.stringify({
+        type: "error",
+        message:
+          error instanceof Error ? error.message : "Unable to revoke invitation",
+      })
+    );
+  }
+
+  break;
+}
+
+case "blockUser": {
+  try {
+    const block = await userBlockService.blockUser(
+      socket.userId!,
+      payload.userId
+    );
+
+    socket.send(
+      JSON.stringify({
+        type: "userBlocked",
+        block,
+      })
+    );
+  } catch (error) {
+    socket.send(
+      JSON.stringify({
+        type: "error",
+        message:
+          error instanceof Error ? error.message : "Unable to block user",
+      })
+    );
+  }
+
+  break;
+}
+
+case "unblockUser": {
+  try {
+    const block = await userBlockService.unblockUser(
+      socket.userId!,
+      payload.userId
+    );
+
+    socket.send(
+      JSON.stringify({
+        type: "userUnblocked",
+        block,
+      })
+    );
+  } catch (error) {
+    socket.send(
+      JSON.stringify({
+        type: "error",
+        message:
+          error instanceof Error ? error.message : "Unable to unblock user",
+      })
+    );
+  }
+
+  break;
+}
+
+case "getBlockedUsers": {
+  try {
+    const result = await userBlockService.getBlockedUsers(
+      socket.userId!,
+      payload.limit ?? 20,
+      payload.before
+    );
+
+    socket.send(
+      JSON.stringify({
+        type: "blockedUsers",
+        ...result,
+      })
+    );
+  } catch (error) {
+    socket.send(
+      JSON.stringify({
+        type: "error",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Unable to fetch blocked users",
+      })
+    );
+  }
+
+  break;
+}
+
+case "archiveConversation": {
+  try {
+    const archive = await archivedConversationService.archiveConversation({
+      userId: socket.userId!,
+      type: payload.conversationType as ArchivedConversationType,
+      otherUserId: payload.otherUserId,
+      roomId: payload.roomId,
+    });
+
+    socket.send(
+      JSON.stringify({
+        type: "conversationArchived",
+        archive,
+      })
+    );
+  } catch (error) {
+    socket.send(
+      JSON.stringify({
+        type: "error",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Unable to archive conversation",
+      })
+    );
+  }
+
+  break;
+}
+
+case "restoreConversation": {
+  try {
+    const archive = await archivedConversationService.restoreConversation({
+      userId: socket.userId!,
+      type: payload.conversationType as ArchivedConversationType,
+      otherUserId: payload.otherUserId,
+      roomId: payload.roomId,
+    });
+
+    socket.send(
+      JSON.stringify({
+        type: "conversationRestored",
+        archive,
+      })
+    );
+  } catch (error) {
+    socket.send(
+      JSON.stringify({
+        type: "error",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Unable to restore conversation",
+      })
+    );
+  }
+
+  break;
+}
+
+case "archivedConversations": {
+  await handleGetConversations(socket, {
+    ...payload,
+    archived: true,
+  }, "archivedConversations");
 
   break;
 }

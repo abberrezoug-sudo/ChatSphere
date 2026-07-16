@@ -1,9 +1,14 @@
 import { Types } from "mongoose";
 import { PinnedMessageRepository } from "../repositories/pinned-message.repository.js";
 import { MessageRepository } from "../repositories/message.repository.js";
+import {
+  RoomPermission,
+  RoomPermissionService,
+} from "./room-permission.service.js";
 
 const pinnedMessageRepository = new PinnedMessageRepository();
 const messageRepository = new MessageRepository();
+const roomPermissionService = new RoomPermissionService();
 
 export class PinnedMessageService {
   async pinMessage(messageId: string, roomId: string, userId: string) {
@@ -14,6 +19,12 @@ export class PinnedMessageService {
     if (!Types.ObjectId.isValid(roomId)) {
       throw new Error("Invalid room");
     }
+
+    await roomPermissionService.assertPermission(
+      roomId,
+      userId,
+      RoomPermission.PIN_MESSAGES
+    );
 
     const message = await messageRepository.findByIdRaw(messageId);
 
@@ -38,9 +49,17 @@ export class PinnedMessageService {
     return await pinnedMessageRepository.pin(messageId, roomId, userId);
   }
 
-  async unpinMessage(messageId: string, roomId: string) {
+  async unpinMessage(messageId: string, roomId: string, userId?: string) {
     if (!Types.ObjectId.isValid(messageId)) {
       throw new Error("Invalid message");
+    }
+
+    if (userId) {
+      await roomPermissionService.assertPermission(
+        roomId,
+        userId,
+        RoomPermission.PIN_MESSAGES
+      );
     }
 
     const existing = await pinnedMessageRepository.findActivePin(messageId);

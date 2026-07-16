@@ -1,4 +1,4 @@
-import { Room, IRoom } from "../models/room.model.js";
+import { Room, IRoom, RoomRole } from "../models/room.model.js";
 
 export class RoomRepository {
   async create(data: {
@@ -11,6 +11,12 @@ export class RoomRepository {
       description: data.description,
       owner: data.owner,
       members: [data.owner],
+      roles: [
+        {
+          user: data.owner,
+          role: RoomRole.OWNER,
+        },
+      ],
     });
   }
 
@@ -27,6 +33,20 @@ export class RoomRepository {
   async findById(id: string): Promise<IRoom | null> {
     return await Room.findById(id);
   }
+ async updateSettings(
+  roomId: string,
+  data: { name?: string; description?: string; isPrivate?: boolean }
+): Promise<IRoom | null> {
+  return await Room.findByIdAndUpdate(
+    roomId,
+    {
+      $set: data,
+    },
+    {
+      new: true,
+    }
+  );
+}
  async addMember(roomId: string, userId: string): Promise<IRoom | null> {
 
   console.log("ROOM ID reçu :", roomId);
@@ -40,6 +60,10 @@ export class RoomRepository {
     {
       $addToSet: {
         members: userId,
+        roles: {
+          user: userId,
+          role: RoomRole.MEMBER,
+        },
       },
     },
     {
@@ -53,12 +77,81 @@ async removeMember(roomId: string, userId: string): Promise<IRoom | null> {
     {
       $pull: {
         members: userId,
+        roles: {
+          user: userId,
+        },
       },
     },
     {
       new: true,
     }
   );
+}
+async setRole(
+  roomId: string,
+  userId: string,
+  role: RoomRole
+): Promise<IRoom | null> {
+  const room = await Room.findOneAndUpdate(
+    {
+      _id: roomId,
+      "roles.user": userId,
+    },
+    {
+      $set: {
+        "roles.$.role": role,
+      },
+    },
+    {
+      new: true,
+    }
+  );
+
+  if (room) {
+    return room;
+  }
+
+  return await Room.findByIdAndUpdate(
+    roomId,
+    {
+      $addToSet: {
+        members: userId,
+      },
+      $push: {
+        roles: {
+          user: userId,
+          role,
+        },
+      },
+    },
+    {
+      new: true,
+    }
+  );
+}
+async transferOwnership(
+  roomId: string,
+  currentOwnerId: string,
+  newOwnerId: string
+): Promise<IRoom | null> {
+  await this.setRole(roomId, currentOwnerId, RoomRole.ADMIN);
+  await this.setRole(roomId, newOwnerId, RoomRole.OWNER);
+
+  return await Room.findByIdAndUpdate(
+    roomId,
+    {
+      owner: newOwnerId,
+      $addToSet: {
+        members: newOwnerId,
+      },
+    },
+    {
+      new: true,
+    }
+  );
+}
+async deleteRoom(roomId: string): Promise<IRoom | null> {
+  return await Room.findByIdAndDelete(roomId);
 }
 async getUserRooms(userId: string) {
   return Room.find({

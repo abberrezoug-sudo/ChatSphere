@@ -8,6 +8,10 @@ import authRoutes from "./routes/auth.routes.js";
 import path from "path";
 import uploadRoutes from "./routes/upload.routes.js";
 import multer from "multer";
+import roomManagementRoutes from "./routes/room-management.routes.js";
+import roomInvitationRoutes from "./routes/room-invitation.routes.js";
+import userBlockRoutes from "./routes/user-block.routes.js";
+import archivedConversationRoutes from "./routes/archived-conversation.routes.js";
 dotenv.config();
 
 const app = express();
@@ -15,6 +19,10 @@ const app = express();
 app.use(express.json());
 
 app.use("/api/auth", authRoutes);
+app.use("/api/rooms", roomManagementRoutes);
+app.use("/api", roomInvitationRoutes);
+app.use("/api/blocks", userBlockRoutes);
+app.use("/api/conversations/archived", archivedConversationRoutes);
 app.use(
   "/uploads",
   express.static(path.resolve("uploads"))

@@ -6,7 +6,8 @@ const conversationService = new ConversationService();
 
 export const handleGetConversations = async (
   socket: AuthSocket,
-  payload: unknown = {}
+  payload: unknown = {},
+  responseType = "conversations"
 ) => {
   try {
     const result = getConversationsSchema.safeParse(payload);
@@ -25,12 +26,13 @@ export const handleGetConversations = async (
     const conversations = await conversationService.getConversations(
       socket.userId,
       result.data.limit ?? 20,
-      result.data.before
+      result.data.before,
+      result.data.archived ?? false
     );
 
     socket.send(
       JSON.stringify({
-        type: "conversations",
+        type: responseType,
         conversations: conversations.conversations,
         hasMore: conversations.hasMore,
       })

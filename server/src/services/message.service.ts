@@ -2,9 +2,16 @@ import { Types } from "mongoose";
 import { MessageRepository } from "../repositories/message.repository.js";
 import { MessageType } from "../models/message.model.js";
 import { NotificationService } from "./notification.service.js";
+import {
+  RoomPermission,
+  RoomPermissionService,
+} from "./room-permission.service.js";
+import { UserBlockService } from "./user-block.service.js";
 
 const notificationService = new NotificationService();
 const messageRepository = new MessageRepository();
+const roomPermissionService = new RoomPermissionService();
+const userBlockService = new UserBlockService();
 
 interface SendMessagePayload {
   sender: string;
@@ -27,6 +34,14 @@ export class MessageService {
     if (!Types.ObjectId.isValid(data.room)) {
       throw new Error("Invalid room");
     }
+
+    await roomPermissionService.assertPermission(
+      data.room,
+      data.sender,
+      RoomPermission.SEND_MESSAGES
+    );
+
+    await userBlockService.assertCanMention(data.sender, data.content ?? "");
 
     const message = await messageRepository.create({
       sender: new Types.ObjectId(data.sender),
@@ -96,8 +111,14 @@ export class MessageService {
       throw new Error("Message not found");
     }
 
-    if (message.sender.toString() !== userId) {
-      throw new Error("Unauthorized");
+    const isSender = message.sender.toString() === userId;
+
+    if (!isSender) {
+      await roomPermissionService.assertPermission(
+        message.room.toString(),
+        userId,
+        RoomPermission.DELETE_MESSAGES
+      );
     }
 
     return await messageRepository.deleteMessage(messageId);
@@ -131,6 +152,11 @@ export class MessageService {
     if (!message) {
       throw new Error("Message not found");
     }
+
+    await userBlockService.assertNoBlockBetween(
+      userId,
+      message.sender.toString()
+    );
 
     const updatedMessage = await messageRepository.reactToMessage(
       messageId,

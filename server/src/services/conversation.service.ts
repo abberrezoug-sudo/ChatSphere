@@ -2,12 +2,20 @@ import { PrivateMessageRepository } from "../repositories/private-message.reposi
 import { RoomRepository } from "../repositories/room.repository.js";
 import { MessageRepository } from "../repositories/message.repository.js";
 import { isOnline } from "./user.service.js";
+import { ArchivedConversationService } from "./archived-conversation.service.js";
 const privateMessageRepository = new PrivateMessageRepository();
 const roomRepository = new RoomRepository();
 const messageRepository = new MessageRepository();
+const archivedConversationService = new ArchivedConversationService();
 
 export class ConversationService {
-  async getConversations(userId: string, limit = 20, before?: string) {
+  async getConversations(
+    userId: string,
+    limit = 20,
+    before?: string,
+    archivedOnly = false
+  ) {
+    const archivedIds = await archivedConversationService.getArchivedIds(userId);
     const privateMessages =
       await privateMessageRepository.getUserMessages(userId);
 
@@ -21,6 +29,18 @@ export class ConversationService {
         sender._id.toString() === userId
           ? receiver
           : sender;
+
+      const isArchived = archivedIds.privateUserIds.has(
+        otherUser._id.toString()
+      );
+
+      if (!archivedOnly && isArchived) {
+        continue;
+      }
+
+      if (archivedOnly && !isArchived) {
+        continue;
+      }
 
       if (!privateMap.has(otherUser._id.toString())) {
 
@@ -61,6 +81,16 @@ export class ConversationService {
     const roomConversations: any[] = [];
 
     for (const room of rooms) {
+      const isArchived = archivedIds.roomIds.has(room._id.toString());
+
+      if (!archivedOnly && isArchived) {
+        continue;
+      }
+
+      if (archivedOnly && !isArchived) {
+        continue;
+      }
+
       const lastMessage =
         await messageRepository.getLastMessage(room._id.toString());
 
