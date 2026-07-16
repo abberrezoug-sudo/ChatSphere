@@ -8,22 +8,31 @@ export const addUser = (
   userId: string
 ): void => {
   users.set(socket, userId);
+
   userSockets.set(userId, socket);
 
+  onlineUsers.set(userId, socket);
+
   console.log(`${socket.username} connected`);
-};
+}
 
 export const removeUser = (
   socket: AuthSocket
 ): void => {
+
   const userId = users.get(socket);
 
   if (userId) {
+
     userSockets.delete(userId);
+
+    onlineUsers.delete(userId);
+
   }
 
   users.delete(socket);
-};
+
+}
 
 export const getUserId = (
   socket: AuthSocket
@@ -34,8 +43,17 @@ export const getUserId = (
 export const getSocketByUserId = (
   userId: string
 ): AuthSocket | undefined => {
+
+  console.log("Recherche :", userId);
+
+  console.log(
+    "Sockets enregistrés :",
+    [...userSockets.keys()]
+  );
+
   return userSockets.get(userId);
-};
+
+}
 
 export const getOnlineCount = (): number => {
   return users.size;

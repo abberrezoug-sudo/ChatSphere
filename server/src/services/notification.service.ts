@@ -37,5 +37,26 @@ async getNotifications(userId: string) {
   async unreadCount(userId: string) {
     return repository.countUnread(userId);
   }
+////////////////ROOM notif/////////
+async createRoomNotification( 
+    sender: string,
+    receiver: string,
+    roomName: string,
+    body: string
+){
 
+    return repository.create({
+
+      sender,
+
+      receiver,
+
+      type: NotificationType.ROOM_MESSAGE,
+
+      title: roomName,
+
+      body
+
+    });
+}
 }

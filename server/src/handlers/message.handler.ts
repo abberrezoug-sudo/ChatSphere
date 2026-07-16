@@ -13,10 +13,12 @@ import {
 } from "../validators/Private.message.validator.js";
 import { handleGetConversations } from "./conversation.handler.js";
 import { NotificationService } from "../services/notification.service.js";
+import { RoomRepository } from "../repositories/room.repository.js";
 const messageService = new MessageService();
 const roomService = new RoomService();
 const privateMessageService = new PrivateMessageService();
 const notificationService = new NotificationService();
+const roomRepository = new RoomRepository();
 // Le chat privé n'a pas de "room" WebSocket à broadcaster : on envoie donc
 // directement au(x) socket(s) des participants concernés.
 const sendToUser = (userId: string, payload: unknown) => {
@@ -112,37 +114,78 @@ export const handleMessage = async (
       }
 
       case "message": {
-        console.log(`${socket.username} : ${payload.message}`);
-        console.log({
-          userId: socket.userId,
-          room: payload.room,
-          message: payload.message,
-          replyTo: payload.replyTo,
-        });
-        const savedMessage = await messageService.sendMessage({
-          sender: socket.userId!,
-          room: payload.room,
+  try {
+    console.log(`${socket.username} : ${payload.content}`);
 
-          content: payload.content,
+    const savedMessage = await messageService.sendMessage({
+      sender: socket.userId!,
+      room: payload.room,
+      content: payload.content,
+      type: payload.typeMessage,
+      replyTo: payload.replyTo,
+      fileUrl: payload.fileUrl,
+      fileName: payload.fileName,
+      fileSize: payload.fileSize,
+      mimeType: payload.mimeType,
+    });
 
-          type: payload.typeMessage,
+    console.log("✅ Message sauvegardé :", savedMessage);
 
-          replyTo: payload.replyTo,
+    const room = await roomRepository.getMembers(payload.room);
 
-          fileUrl: payload.fileUrl,
-          fileName: payload.fileName,
-          fileSize: payload.fileSize,
-          mimeType: payload.mimeType,
-        });
+    console.log("ROOM =", room);
 
-        broadcastToRoom(payload.room, {
-          type: "message",
-          message: savedMessage,
-        });
+    if (room) {
+      console.log("MEMBRES =", room.members.length);
 
-        break;
+      for (const member of room.members as any[]) {
+        console.log("MEMBRE :", member.username);
+
+        if (member._id.toString() === socket.userId) {
+          console.log("⏭️ Expéditeur ignoré");
+          continue;
+        }
+
+        console.log("Création notification...");
+
+        const notification =
+          await notificationService.createRoomNotification(
+            socket.userId!,
+            member._id.toString(),
+            room.name,
+            savedMessage.content
+          );
+
+        console.log("✅ Notification créée :", notification);
+
+        const memberSocket = getSocketByUserId(member._id.toString());
+
+        console.log("Socket :", memberSocket ? "Trouvé" : "Non trouvé");
+
+        if (memberSocket) {
+          memberSocket.send(
+            JSON.stringify({
+              type: "notification",
+              notification,
+            })
+          );
+
+          console.log("📨 Notification envoyée");
+        }
       }
+    }
 
+    broadcastToRoom(payload.room, {
+      type: "message",
+      message: savedMessage,
+    });
+
+  } catch (err) {
+    console.error("❌ ERREUR :", err);
+  }
+
+  break;
+}
       case "history": {
         const messages = await messageService.getRoomMessages(
           payload.room

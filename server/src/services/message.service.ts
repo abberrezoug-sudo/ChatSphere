@@ -26,33 +26,34 @@ interface SendMessagePayload {
 export class MessageService {
 //sendMessageAsunchrounous
   async sendMessage(data: SendMessagePayload) {
-    if (!Types.ObjectId.isValid(data.sender)) {
-      throw new Error("Invalid sender");
-    }
-
-    if (!Types.ObjectId.isValid(data.room)) {
-      throw new Error("Invalid room");
-    }
-
-   const message = await messageRepository.create({
-  sender: new Types.ObjectId(data.sender),
-  room: new Types.ObjectId(data.room),
-
-  content: data.content ?? "",
-
-  type: data.type ?? MessageType.TEXT,
-
-  replyTo: data.replyTo
-    ? new Types.ObjectId(data.replyTo)
-    : null,
-
-  fileUrl: data.fileUrl,
-  fileName: data.fileName,
-  fileSize: data.fileSize,
-  mimeType: data.mimeType,
-});
-
+  if (!Types.ObjectId.isValid(data.sender)) {
+    throw new Error("Invalid sender");
   }
+
+  if (!Types.ObjectId.isValid(data.room)) {
+    throw new Error("Invalid room");
+  }
+
+  const message = await messageRepository.create({
+    sender: new Types.ObjectId(data.sender),
+    room: new Types.ObjectId(data.room),
+
+    content: data.content ?? "",
+
+    type: data.type ?? MessageType.TEXT,
+
+    replyTo: data.replyTo
+      ? new Types.ObjectId(data.replyTo)
+      : null,
+
+    fileUrl: data.fileUrl,
+    fileName: data.fileName,
+    fileSize: data.fileSize,
+    mimeType: data.mimeType,
+  });
+
+  return message;
+}
 
   async getRoomMessages(roomId: string) {
     if (!Types.ObjectId.isValid(roomId)) {

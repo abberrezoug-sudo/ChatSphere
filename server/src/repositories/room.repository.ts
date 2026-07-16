@@ -65,4 +65,9 @@ async getUserRooms(userId: string) {
     members: userId,
   }).populate("owner", "username avatar");
 }
+/////get memebers
+async getMembers(roomId: string) {
+  return Room.findById(roomId)
+    .populate("members", "username avatar");
+}
 }
