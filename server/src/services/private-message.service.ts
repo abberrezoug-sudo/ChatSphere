@@ -3,7 +3,7 @@ import { PrivateMessageType } from "../models/private-message.model.js";
 import { PrivateMessageRepository } from "../repositories/private-message.repository.js";
 
 const repository = new PrivateMessageRepository();
-
+const notificationService = new (await import("./notification.service.js")).NotificationService();
 interface SendPrivateMessagePayload {
   sender: string;
   receiver: string;
@@ -46,6 +46,7 @@ export class PrivateMessageService {
       fileSize: data.fileSize,
       mimeType: data.mimeType,
     });
+
   }
 
   async getConversation(

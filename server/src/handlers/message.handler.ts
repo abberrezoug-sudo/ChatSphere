@@ -12,10 +12,11 @@ import {
   reactPrivateMessageSchema,
 } from "../validators/Private.message.validator.js";
 import { handleGetConversations } from "./conversation.handler.js";
+import { NotificationService } from "../services/notification.service.js";
 const messageService = new MessageService();
 const roomService = new RoomService();
 const privateMessageService = new PrivateMessageService();
-
+const notificationService = new NotificationService();
 // Le chat privé n'a pas de "room" WebSocket à broadcaster : on envoie donc
 // directement au(x) socket(s) des participants concernés.
 const sendToUser = (userId: string, payload: unknown) => {
@@ -365,64 +366,75 @@ case "getConversations": {
       // ===================  CHAT PRIVÉ (DM)  =========================
       // ============================================================
 
-      case "privateMessage": {
-        try {
-          const message = await privateMessageService.send({
-            sender: socket.userId!,
-            receiver: payload.receiverId,
-            content: payload.content,
-            type: payload.typeMessage,
-            replyTo: payload.replyTo,
-            fileUrl: payload.fileUrl,
-            fileName: payload.fileName,
-            fileSize: payload.fileSize,
-            mimeType: payload.mimeType,
-          });
+     case "privateMessage": {
+  try {
+    const message = await privateMessageService.send({
+      sender: socket.userId!,
+      receiver: payload.receiverId,
+      content: payload.content,
+      type: payload.typeMessage,
+      replyTo: payload.replyTo,
+      fileUrl: payload.fileUrl,
+      fileName: payload.fileName,
+      fileSize: payload.fileSize,
+      mimeType: payload.mimeType,
+    });
 
-          const receiver = getSocketByUserId(payload.receiverId);
+    const notification =
+      await notificationService.createPrivateNotification(
+        socket.userId!,
+        payload.receiverId,
+        message.content
+      );
 
-          console.log("Sender :", socket.userId);
-          console.log("Receiver ID :", payload.receiverId);
-          console.log("Receiver Socket :", receiver);
+    const receiver = getSocketByUserId(payload.receiverId);
 
-          if (receiver) {
-            console.log("✅ Receiver trouvé");
+    console.log("Sender :", socket.userId);
+    console.log("Receiver ID :", payload.receiverId);
+    console.log("Receiver Socket :", receiver);
 
-            receiver.send(
-              JSON.stringify({
-                type: "privateMessage",
-                message,
-              })
-            );
-          } else {
-            console.log("❌ Receiver introuvable");
-          }
+    if (receiver) {
+      console.log("✅ Receiver trouvé");
 
-          socket.send(
-            JSON.stringify({
-              type: "privateMessage",
-              message,
-            })
-          );
+      receiver.send(
+        JSON.stringify({
+          type: "privateMessage",
+          message,
+        })
+      );
 
-          console.log(
-            `${socket.username} ➜ ${payload.receiverId}`
-          );
-        } catch (error) {
-          socket.send(
-            JSON.stringify({
-              type: "error",
-              message:
-                error instanceof Error
-                  ? error.message
-                  : "Unable to send private message",
-            })
-          );
-        }
+      receiver.send(
+        JSON.stringify({
+          type: "notification",
+          notification,
+        })
+      );
+    } else {
+      console.log("❌ Receiver introuvable");
+    }
 
-        break;
-      }
+    socket.send(
+      JSON.stringify({
+        type: "privateMessage",
+        message,
+      })
+    );
 
+    console.log(`${socket.username} ➜ ${payload.receiverId}`);
+  } catch (error) {
+    socket.send(
+      JSON.stringify({
+        type: "error",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Unable to send private message",
+      })
+    );
+  }
+
+  break;
+}
       // Historique paginé d'une conversation privée.
       // payload: { type: "privateHistory", withUserId, limit?, before? }
       case "privateHistory": {
