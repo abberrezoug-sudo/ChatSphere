@@ -1,7 +1,11 @@
 import 'package:go_router/go_router.dart';
 
+import '../../features/auth/presentation/forgot_password_screen.dart';
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/auth/presentation/register_screen.dart';
+import '../../features/chat/presentation/chat_screen.dart';
+import '../../features/home/presentation/home_screen.dart';
+import '../../features/profile/presentation/profile_screen.dart';
 import '../../features/splash/presentation/splash_screen.dart';
 
 /// Noms/chemins des routes de l'application.
@@ -11,6 +15,10 @@ class AppRoutes {
   static const String splash = '/splash';
   static const String register = '/register';
   static const String login = '/login';
+  static const String forgotPassword = '/forgot-password';
+  static const String home = '/home';
+  static const String chat = '/chat';
+  static const String profile = '/profile';
 }
 
 /// Configuration go_router de ChatSphere.
@@ -30,6 +38,22 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: AppRoutes.login,
       builder: (context, state) => const LoginScreen(),
+    ),
+    GoRoute(
+      path: AppRoutes.forgotPassword,
+      builder: (context, state) => const ForgotPasswordScreen(),
+    ),
+    GoRoute(
+      path: AppRoutes.home,
+      builder: (context, state) => const HomeScreen(),
+    ),
+    GoRoute(
+      path: AppRoutes.chat,
+      builder: (context, state) => const ChatScreen(),
+    ),
+    GoRoute(
+      path: AppRoutes.profile,
+      builder: (context, state) => const ProfileScreen(),
     ),
   ],
 );
