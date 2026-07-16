@@ -26,5 +26,16 @@ export class NotificationService {
     });
 
   }
+async getNotifications(userId: string) {
+    return repository.getUserNotifications(userId);
+  }
+
+  async readNotification(notificationId: string) {
+    return repository.markAsRead(notificationId);
+  }
+
+  async unreadCount(userId: string) {
+    return repository.countUnread(userId);
+  }
 
 }

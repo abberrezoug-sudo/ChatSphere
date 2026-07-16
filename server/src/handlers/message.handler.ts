@@ -654,7 +654,59 @@ case "getConversations": {
 
         break;
       }
+//add get notif cas 
+case "getNotifications": {
 
+    const notifications =
+        await notificationService.getNotifications(
+            socket.userId!
+        );
+
+    socket.send(
+        JSON.stringify({
+            type: "notifications",
+            notifications,
+        })
+    );
+
+    break;
+}
+//////////////////////////ADD Read notif case/////////////////////
+///////////////////////////////////////////////////
+case "readNotification": {
+
+    const notification =
+        await notificationService.readNotification(
+            payload.notificationId
+        );
+
+    socket.send(
+        JSON.stringify({
+            type: "notificationRead",
+            notification,
+        })
+    );
+
+    break;
+}
+///////////////////////unreadNotificationCount CASE///////////////////////
+//////////////////////////////////////////////////////////////////////////
+case "unreadNotificationCount": {
+
+    const count =
+        await notificationService.unreadCount(
+            socket.userId!
+        );
+
+    socket.send(
+        JSON.stringify({
+            type: "unreadNotificationCount",
+            count,
+        })
+    );
+
+    break;
+}
       default:
         console.log("❓ Type inconnu :", payload.type);
     }

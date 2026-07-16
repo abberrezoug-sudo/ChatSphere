@@ -11,21 +11,26 @@ export class NotificationRepository {
       receiver: userId,
     })
       .populate("sender", "username avatar")
-      .sort({
-        createdAt: -1,
-      });
+      .sort({ createdAt: -1 });
   }
 
-  async markAsRead(id: string) {
+  async markAsRead(notificationId: string) {
     return Notification.findByIdAndUpdate(
-      id,
+      notificationId,
       {
         read: true,
       },
       {
         new: true,
       }
-    );
+    )
+      .populate("sender", "username avatar");
   }
 
+  async countUnread(userId: string) {
+    return Notification.countDocuments({ ///count doucumment 
+      receiver: userId,
+      read: false,
+    });
+  }
 }
