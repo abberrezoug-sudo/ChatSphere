@@ -20,7 +20,7 @@ import {
   unpinMessageSchema,
   getPinnedMessagesSchema,
 } from "../validators/pinned-message.validator.js";
-
+import { handleSearch } from "./search.handler.js";
 const pinnedMessageService = new PinnedMessageService();
 const messageService = new MessageService();
 const roomService = new RoomService();
@@ -734,6 +734,12 @@ case "unreadNotificationCount": {
     );
 
     break;
+}
+///////////////////////////////////////////SEARCH////////////////////////
+///////////////////////////////////////////CASE/////////////////////////
+case "search": {
+  await handleSearch(socket, payload);
+  break;
 }
 ////////pign case/////////////////////////////
 //////////////////////////////////////
