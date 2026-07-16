@@ -7,7 +7,7 @@ const roomRepository = new RoomRepository();
 const messageRepository = new MessageRepository();
 
 export class ConversationService {
-  async getConversations(userId: string) {
+  async getConversations(userId: string, limit = 20, before?: string) {
     const privateMessages =
       await privateMessageRepository.getUserMessages(userId);
 
@@ -94,7 +94,7 @@ export class ConversationService {
       });
     }
 
-    const conversations = [
+    let conversations = [
       ...privateConversations,
       ...roomConversations,
     ].sort((a, b) => {
@@ -104,6 +104,23 @@ export class ConversationService {
       );
     });
 
-    return conversations;
+    if (before) {
+      conversations = conversations.filter((conversation) => {
+        return (
+          new Date(conversation.createdAt).getTime() <
+          new Date(before).getTime()
+        );
+      });
+    }
+
+    const hasMore = conversations.length > limit;
+
+    return {
+      conversations: hasMore
+        ? conversations.slice(0, limit)
+        : conversations,
+
+      hasMore,
+    };
   }
 }

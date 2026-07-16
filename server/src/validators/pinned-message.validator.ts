@@ -12,4 +12,6 @@ export const unpinMessageSchema = z.object({
 
 export const getPinnedMessagesSchema = z.object({
   roomId: z.string().min(1),
+  limit: z.number().optional(),
+  before: z.string().optional(),
 });

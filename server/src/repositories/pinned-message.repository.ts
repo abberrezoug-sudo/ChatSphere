@@ -26,13 +26,32 @@ export class PinnedMessageRepository {
     );
   }
 
-  async getPinnedMessages(roomId: string) {
-    return PinnedMessage.find({
+  async getPinnedMessages(roomId: string, limit = 20, before?: string) {
+    const query: any = {
       room: new Types.ObjectId(roomId),
       active: true,
-    })
+    };
+
+    if (before) {
+      query.createdAt = {
+        $lt: new Date(before),
+      };
+    }
+
+    const pinnedMessages = await PinnedMessage.find(query)
       .sort({ createdAt: -1 })
+      .limit(limit + 1)
       .populate("message")
       .populate("pinnedBy", "username avatar");
+
+    const hasMore = pinnedMessages.length > limit;
+
+    return {
+      pinnedMessages: hasMore
+        ? pinnedMessages.slice(0, limit)
+        : pinnedMessages,
+
+      hasMore,
+    };
   }
 }

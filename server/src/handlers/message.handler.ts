@@ -378,7 +378,7 @@ export const handleMessage = async (
         break;
       }
 case "getConversations": {
-  await handleGetConversations(socket);
+  await handleGetConversations(socket, payload);
 
   break;
 }
@@ -852,14 +852,17 @@ case "getPinnedMessages": {
 
   try {
     const pinnedMessages = await pinnedMessageService.getPinnedMessages(
-      result.data.roomId
+      result.data.roomId,
+      result.data.limit ?? 20,
+      result.data.before
     );
 
     socket.send(
       JSON.stringify({
         type: "pinnedMessages",
         roomId: result.data.roomId,
-        pinnedMessages,
+        pinnedMessages: pinnedMessages.pinnedMessages,
+        hasMore: pinnedMessages.hasMore,
       })
     );
   } catch (error) {

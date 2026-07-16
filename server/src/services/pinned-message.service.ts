@@ -56,11 +56,15 @@ export class PinnedMessageService {
     return await pinnedMessageRepository.unpin(existing.id);
   }
 
-  async getPinnedMessages(roomId: string) {
+  async getPinnedMessages(roomId: string, limit = 20, before?: string) {
     if (!Types.ObjectId.isValid(roomId)) {
       throw new Error("Invalid room");
     }
 
-    return await pinnedMessageRepository.getPinnedMessages(roomId);
+    return await pinnedMessageRepository.getPinnedMessages(
+      roomId,
+      limit,
+      before
+    );
   }
 }
