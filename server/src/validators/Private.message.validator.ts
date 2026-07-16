@@ -30,3 +30,9 @@ export const privateHistorySchema = z.object({
 
   before: z.string().optional(),
 });
+export const notificationHistorySchema =
+  z.object({
+    limit: z.number().optional(),
+
+    before: z.string().optional(),
+  });

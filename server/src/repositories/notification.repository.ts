@@ -33,4 +33,37 @@ export class NotificationRepository {
       read: false,
     });
   }
+  async findByUser(
+  userId: string,
+  limit = 20,
+  before?: string
+) {
+  const query: any = {
+    receiver: userId,
+  };
+
+  if (before) {
+    query.createdAt = {
+      $lt: new Date(before),
+    };
+  }
+
+  const notifications = await Notification.find(query)
+    .populate("sender", "username avatar")
+    .sort({
+      createdAt: -1,
+    })
+    .limit(limit + 1);
+
+  const hasMore =
+    notifications.length > limit;
+
+  return {
+    notifications: hasMore
+      ? notifications.slice(0, limit)
+      : notifications,
+
+    hasMore,
+  };
+}
 }

@@ -724,6 +724,35 @@ case "unreadNotificationCount": {
 
     break;
 }
+case "notificationHistory": {
+
+  const history =
+    await notificationService.getNotifications(
+
+      socket.userId!,
+
+      payload.limit ?? 20,
+
+      payload.before
+
+    );
+
+  socket.send(
+    JSON.stringify({
+
+      type: "notificationHistory",
+
+      notifications:
+        history.notifications,
+
+      hasMore:
+        history.hasMore
+
+    })
+  );
+
+  break;
+}
 ///////////////////////////////////////////SEARCH////////////////////////
 ///////////////////////////////////////////CASE/////////////////////////
 case "search": {

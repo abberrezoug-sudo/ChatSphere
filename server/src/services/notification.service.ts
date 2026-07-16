@@ -26,9 +26,17 @@ export class NotificationService {
     });
 
   }
-async getNotifications(userId: string) {
-    return repository.getUserNotifications(userId);
-  }
+async getNotifications(
+  userId: string,
+  limit = 20,
+  before?: string
+) {
+  return await repository.findByUser(
+    userId,
+    limit,
+    before
+  );
+}
 
   async readNotification(notificationId: string) {
     return repository.markAsRead(notificationId);
@@ -80,4 +88,6 @@ async createReactionNotification(
 
   });
 }
+
+ 
 }
